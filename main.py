@@ -38,7 +38,8 @@ val_img_paths = []
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
         if image.endswith(".jpg") and not image.startswith("."):
-            val_img_paths.append(os.path.join(dataset_dir, case, image))
+            pseudo_val = io.imread(os.path.join(dataset_dir, 'val', case, image), as_gray=False)
+            val_img_paths.append(pseudo_val)
 
 
 # %% Generator
