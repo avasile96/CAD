@@ -10,6 +10,7 @@ import os
 import numpy as np
 from skimage import io
 from sklearn.neighbors import KNeighborsClassifier
+import gc
 
 # Directories
 source_dir = os.getcwd() # current working directory
@@ -25,6 +26,7 @@ train_img_paths = []
 img_label = []
 
 x = []
+# pseudo_x = np.zeros()
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
@@ -38,6 +40,9 @@ for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
                 val_img_paths.append(os.path.join(dataset_dir, case, image))
+
+pseudo_x=None                
+gc.collect()
     
 #%% Generator
 class SkinImageDatabase(tf.keras.utils.Sequence):
@@ -69,20 +74,56 @@ class SkinImageDatabase(tf.keras.utils.Sequence):
             
         return x, y
 
+#%% Preprocessing
+from skimage.color import rgb2hsv
 
-# Inputs
-x = [[0], [1], [2], [3]]
-y = [0, 0, 1, 1]
+# List to array
+x_arr = np.array(x)
+x = None
+gc.collect()
 
-# FOR DL
-# train_gen = SkinImageDatabase(batch_size, img_size, train_img_paths, case)
-# val_gen = SkinImageDatabase(batch_size, img_size, val_img_paths, case)
+# Color Space Transformation
+m = 0
+x_hsv = np.zeros([60,450,600,3])
+for i in range(1,62,10):
+    if i!=1:
+        x_hsv[m:i-1,:,:,:] = rgb2hsv(x_arr[m:i-1,:,:,:])
+        print(i-1)
+        m = i-1
+    if i % 100 == 0:
+        gc.collect()
+
+
+#%% Feature extraction
+
+feature_vector = np.zeros(x_hsv.shape[0])
+
+# Mean of image
+for i in range(1,x_hsv.shape[0]):
+    feature_vector[i] = np.mean(x_hsv[i,:,:,2])
+    
+# SIFT
+
+# LBP
+
+
+#%% Inputs
+# x = [[0], [1], [2], [3]]
+# y = [0, 0, 1, 1]
+
+# # FOR DL
+# # train_gen = SkinImageDatabase(batch_size, img_size, train_img_paths, case)
+# # val_gen = SkinImageDatabase(batch_size, img_size, val_img_paths, case)
+
+x_train = feature_vector[np.newaxis].T
+y_train = np.array(img_label,dtype='U')
+np.where(y_train == 'les',1,0)
 
 # Classifier
-neigh = KNeighborsClassifier(n_neighbors=3)
-neigh.fit(x,y)
+neigh = KNeighborsClassifier(n_neighbors=2)
+neigh.fit(x_train,y_train[0:60])
     
     
 # Predictions
-print(neigh.predict([[1.1]])) # hard classification prediction
+print(neigh.predict([[1]])) # hard classification prediction
 print(neigh.predict_proba([[0.9]])) # confidence score prediction
