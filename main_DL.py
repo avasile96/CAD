@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Oct  7 09:34:02 2021
+Created on Tue Oct 26 15:24:50 2021
 
-@author: Manuel Ojeda & Alexandru Vasile
+@author: vasil
 """
 
 import tensorflow as tf
@@ -22,27 +22,24 @@ img_size = (450, 600,3) # RGB imges!
 batch_size = 32
 
 # Getting paths to images
-img_label_train = []
+train_img_paths = []
+img_label = []
 
 x = []
 # pseudo_x = np.zeros()
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
+                # train_img_paths.append(os.path.join(dataset_dir, 'train', case, image)) # for DL
                 pseudo_x = io.imread(os.path.join(dataset_dir, 'train', case, image), as_gray = False)
                 x.append(pseudo_x)
-                img_label_train.append(case)
+                img_label.append(case)
     
-# Getting paths to images
-img_label_val = []
-
-y = []
+val_img_paths = []    
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                pseudo_x = io.imread(os.path.join(dataset_dir, 'val', case, image), as_gray = False)
-                x.append(pseudo_x)
-                img_label_val.append(case)
+                val_img_paths.append(os.path.join(dataset_dir, case, image))
 
 pseudo_x=None                
 gc.collect()
@@ -91,13 +88,13 @@ x_hsv = np.zeros([60,450,600,3])
 for i in range(1,62,10):
     if i!=1:
         x_hsv[m:i-1,:,:,:] = rgb2hsv(x_arr[m:i-1,:,:,:])
-        # print(i-1)
+        print(i-1)
         m = i-1
     if i % 100 == 0:
         gc.collect()
 
 
-#%% Feature Extraction
+#%% Feature extraction
 
 feature_vector = np.zeros(x_hsv.shape[0])
 
@@ -109,70 +106,19 @@ for i in range(1,x_hsv.shape[0]):
 
 # LBP
 
+
 #%% Inputs
 
+
 x_train = feature_vector[np.newaxis].T
-y_train = np.array(img_label_train_train,dtype='U')
+y_train = np.array(img_label,dtype='U')
 np.where(y_train == 'les',1,0)
 
-x_val = 
-y_val = 
-
-#%% Feature Selection
-
-#% UNIVARIATE SELECTION
-from sklearn.feature_selection import SelectKBest
-from sklearn.feature_selection import chi2
-
-select_feature = SelectKBest(chi2, k=20).fit(x_train, y_train)
-
-x_train = select_feature.transform(x_train)
-X_test = select_feature.transform(x_val)
-
-#%% RANDOM FOREST ELIMINATION
-from sklearn.feature_selection import RFE
-from sklearn.ensemble import RandomForestClassifier
-
-clf_rf_3 = RandomForestClassifier()      
-rfe = RFE(estimator=clf_rf_3, n_features_to_select=5, step=1)
-rfe = rfe.fit(x_train, y_train)
-
-# breast_data_pd_data.columns[rfe.support_] # checking what we're using
-
-x_train = x_train.T[rfe.support_].T
-X_test = X_test.T[rfe.support_].T
-
-#%% RECURSIVE FEATURE ELIMINATION WITH CROSS VALIDATION
-
-from sklearn.feature_selection import RFECV
-
-# The "accuracy" scoring is proportional to the number of correct classifications
-clf_rf_4 = RandomForestClassifier() 
-rfecv = RFECV(estimator=clf_rf_4, step=10, cv=10, scoring='accuracy')   #5-fold cross-validation
-rfecv = rfecv.fit(x_train, y_train)
-
-x_train = rfecv.transform(x_train)
-X_test = rfecv.transform(X_test)
-
-#%% LINEAR SCV 
-from sklearn.svm import LinearSVC
-from sklearn.feature_selection import SelectFromModel
-
-lsvc = LinearSVC(C=0.01, penalty="l2", dual=False).fit(x_train, y_train)
-model = SelectFromModel(lsvc, prefit=True)
-
-x_train = model.transform(x_train)
-X_test = model.transform(X_test)
-
-
-
-#%% Classifier
+# Classifier
 neigh = KNeighborsClassifier(n_neighbors=2)
 neigh.fit(x_train,y_train[0:60])
+    
     
 # Predictions
 print(neigh.predict([[1]])) # hard classification prediction
 print(neigh.predict_proba([[0.9]])) # confidence score prediction
-
-
-
