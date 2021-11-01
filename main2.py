@@ -11,6 +11,7 @@ import numpy as np
 from skimage import io
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
+import cv2
 import gc
 
 # Directories
@@ -31,7 +32,7 @@ y_train = []
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                pseudo_x = io.imread(os.path.join(dataset_dir, 'train', case, image), as_gray = False)
+                pseudo_x = io.imread(os.path.join(dataset_dir, 'train', case, image))
                 x_train.append(pseudo_x)
                 y_train.append(case)
     
@@ -41,7 +42,6 @@ y_val = []
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                # val_img_paths.append(os.path.join(dataset_dir, 'val', case, image))
                 pseudo_val = io.imread(os.path.join(dataset_dir, 'val', case, image))
                 x_val.append(pseudo_val)
                 y_val.append(case)
@@ -58,7 +58,7 @@ from skimage.color import rgb2hsv
 # x_train_arr = np.array(x_train)
 # x_val_arr = np.array(x_val)
 
-# Section to select different images of different range, to select from 3 classes
+# Section to select different images of all 3 different class
 # DON'T FORGET TO DELETE WHEN THE PROJECT IT'S DONE
 x_train_arr = x_train[100:300] + x_train[900:1100] + x_train[1800:1900]
 x_train_arr = np.array(x_train_arr)
