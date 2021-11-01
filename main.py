@@ -22,29 +22,26 @@ img_size = (450, 600,3) # RGB imges!
 batch_size = 32
 
 # Getting paths to images
-img_label_train = []
-
-x = []
-# pseudo_x = np.zeros()
+y_train = []
+x_train = []
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
                 pseudo_x = io.imread(os.path.join(dataset_dir, 'train', case, image), as_gray = False)
-                x.append(pseudo_x)
-                img_label_train.append(case)
+                x_train.append(pseudo_x)
+                y_train.append(case)
     
 # Getting paths to images
-img_label_val = []
-
-y = []
+y_val = []
+x_val = []
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
                 pseudo_x = io.imread(os.path.join(dataset_dir, 'val', case, image), as_gray = False)
-                x.append(pseudo_x)
-                img_label_val.append(case)
+                x_val.append(pseudo_x)
+                y_val.append(case)
 
-pseudo_x=None                
+pseudo_x = None                
 gc.collect()
     
 #%% Generator
@@ -81,29 +78,39 @@ class SkinImageDatabase(tf.keras.utils.Sequence):
 from skimage.color import rgb2hsv
 
 # List to array
-x_arr = np.array(x)
-x = None
+x_train_arr = np.array(x_train)
+x_val_arr = np.array(x_val)
+
+x_train = None
+x_val = None
 gc.collect()
 
 # Color Space Transformation
 m = 0
-x_hsv = np.zeros([60,450,600,3])
+x_train_hsv = np.zeros([60,450,600,3])
+x_val_hsv = np.zeros([60,450,600,3])
+
+# Following routine is only for dev, modify for full implementation
 for i in range(1,62,10):
     if i!=1:
-        x_hsv[m:i-1,:,:,:] = rgb2hsv(x_arr[m:i-1,:,:,:])
-        # print(i-1)
+        x_train_hsv[m:i-1,:,:,:] = rgb2hsv(x_train_arr[m:i-1,:,:,:])
+        x_val_hsv[m:i-1,:,:,:] = rgb2hsv(x_val_arr[m:i-1,:,:,:])
+
         m = i-1
+        
+    # every 100 images, we collect the garbage (RAM saving)
     if i % 100 == 0:
         gc.collect()
 
-
 #%% Feature Extraction
 
-feature_vector = np.zeros(x_hsv.shape[0])
+feature_vector_train = np.zeros(x_train_hsv.shape[0])
+feature_vector_val = np.zeros(x_val_hsv.shape[0])
 
 # Mean of image
 for i in range(1,x_hsv.shape[0]):
-    feature_vector[i] = np.mean(x_hsv[i,:,:,2])
+    feature_vector_train[i] = np.mean(x_hsv[i,:,:,2])
+    feature_vector_val = np.zeros(x_val_hsv.shape[0])
     
 # SIFT
 
