@@ -64,7 +64,6 @@ for i in range(0,x_train_arr.shape[0]):
     x_train_arr[i] = rgb2hsv(x_train_arr[i])
     Y_train.append(y_train[i])
     
-
 for i in range(0,x_val_arr.shape[0]):
     x_val_arr[i] = rgb2hsv(x_val_arr[i])
     Y_val.append(y_val[i])
