@@ -61,7 +61,7 @@ Y_val = []
 Y_train = []
 
 for i in range(0,x_train_arr.shape[0]):
-    # x_train_arr[i] = rgb2hsv(x_train_arr[i])
+    x_train_arr[i] = rgb2hsv(x_train_arr[i])
     Y_train.append(y_train[i])
     
 
@@ -102,58 +102,58 @@ labels_train = np.where(np.array(Y_train) == 'les',1,0)
 X_val = feature_vector_val[np.newaxis].T
 labels_val = np.where(np.array(Y_val) == 'les',1,0)
 
-# del feature_vector_train
-# del feature_vector_val
+del feature_vector_train
+del feature_vector_val
 
-# del Y_train
-# del Y_val
-# gc.collect()
+del Y_train
+del Y_val
+gc.collect()
 
 #%%%%%%%%%%%%%%%%%%%%%%% Feature Selection %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#% UNIVARIATE SELECTION
-from sklearn.feature_selection import SelectKBest
-from sklearn.feature_selection import chi2
+# #% UNIVARIATE SELECTION
+# from sklearn.feature_selection import SelectKBest
+# from sklearn.feature_selection import chi2
 
-select_feature = SelectKBest().fit(X_train, labels_train)
+# select_feature = SelectKBest().fit(X_train, labels_train)
 
-X_train = select_feature.transform(X_train)
-X_test = select_feature.transform(X_val)
+# X_train = select_feature.transform(X_train)
+# X_test = select_feature.transform(X_val)
 
-#%% RANDOM FOREST ELIMINATION
-from sklearn.feature_selection import RFE
-from sklearn.ensemble import RandomForestClassifier
+# #%% RANDOM FOREST ELIMINATION
+# from sklearn.feature_selection import RFE
+# from sklearn.ensemble import RandomForestClassifier
 
-clf_rf_3 = RandomForestClassifier()      
-rfe = RFE(estimator=clf_rf_3, n_features_to_select=5, step=1)
-rfe = rfe.fit(X_train, labels_train)
+# clf_rf_3 = RandomForestClassifier()      
+# rfe = RFE(estimator=clf_rf_3, n_features_to_select=5, step=1)
+# rfe = rfe.fit(X_train, labels_train)
 
-# breast_data_pd_data.columns[rfe.support_] # checking what we're using
+# # breast_data_pd_data.columns[rfe.support_] # checking what we're using
 
-X_train = X_train.T[rfe.support_].T
-X_val = X_val.T[rfe.support_].T
+# X_train = X_train.T[rfe.support_].T
+# X_val = X_val.T[rfe.support_].T
 
-#%% RECURSIVE FEATURE ELIMINATION WITH CROSS VALIDATION
+# #%% RECURSIVE FEATURE ELIMINATION WITH CROSS VALIDATION
 
-from sklearn.feature_selection import RFECV
+# from sklearn.feature_selection import RFECV
 
-# The "accuracy" scoring is proportional to the number of correct classifications
-clf_rf_4 = RandomForestClassifier() 
-rfecv = RFECV(estimator=clf_rf_4, step=10, cv=10, scoring='accuracy')   #5-fold cross-validation
-rfecv = rfecv.fit(X_train, labels_train)
+# # The "accuracy" scoring is proportional to the number of correct classifications
+# clf_rf_4 = RandomForestClassifier() 
+# rfecv = RFECV(estimator=clf_rf_4, step=10, cv=10, scoring='accuracy')   #5-fold cross-validation
+# rfecv = rfecv.fit(X_train, labels_train)
 
-X_train = rfecv.transform(X_train)
-X_test = rfecv.transform(X_test)
+# X_train = rfecv.transform(X_train)
+# X_test = rfecv.transform(X_test)
 
-#%% LINEAR SCV 
-from sklearn.svm import LinearSVC
-from sklearn.feature_selection import SelectFromModel
+# #%% LINEAR SCV 
+# from sklearn.svm import LinearSVC
+# from sklearn.feature_selection import SelectFromModel
 
-lsvc = LinearSVC(C=0.01, penalty="l2", dual=False).fit(X_train, labels_train)
-model = SelectFromModel(lsvc, prefit=True)
+# lsvc = LinearSVC(C=0.01, penalty="l2", dual=False).fit(X_train, labels_train)
+# model = SelectFromModel(lsvc, prefit=True)
 
-X_train = model.transform(X_train)
-X_test = model.transform(X_val)
+# X_train = model.transform(X_train)
+# X_test = model.transform(X_val)
 
 #%%%%%%%%%%%%%%%%%%% CLASSIFICATION %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
