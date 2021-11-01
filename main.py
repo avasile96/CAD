@@ -145,8 +145,7 @@ rfecv = rfecv.fit(X_train, labels_train)
 X_train = rfecv.transform(X_train)
 X_test = rfecv.transform(X_test)
 
-#%%%%%%%%%%%%%%%%%%% CLASSIFICATION %%%%%%%%%%%%%%%%%%%%%%%%%%%
-#% LINEAR SCV 
+#%% LINEAR SCV 
 from sklearn.svm import LinearSVC
 from sklearn.feature_selection import SelectFromModel
 
@@ -156,7 +155,7 @@ model = SelectFromModel(lsvc, prefit=True)
 X_train = model.transform(X_train)
 X_test = model.transform(X_val)
 
-#%% Classifier
+#%%%%%%%%%%%%%%%%%%% CLASSIFICATION %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 neigh = KNeighborsClassifier(n_neighbors=2)
 neigh.fit(X_train,labels_train)
