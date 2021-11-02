@@ -11,6 +11,7 @@ import numpy as np
 from skimage import io
 from sklearn.neighbors import KNeighborsClassifier
 import gc
+import cv2
 
 # Directories
 source_dir = os.getcwd() # current working directory
@@ -21,52 +22,71 @@ dataset_dir = os.path.join(project_dir, 'dataset')
 img_size = (450, 600,3) # RGB imges!
 batch_size = 32
 
+# Sparse implementation for dev speed --> read every 10th image
+aux = 0
+
 # Getting paths to images
 y_train = []
 x_train = []
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                pseudo_x = io.imread(os.path.join(dataset_dir, 'train', case, image), as_gray = False)
-                x_train.append(pseudo_x)
-                y_train.append(case)
-    
+                if (aux%10==0):
+                    pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
+                    x_train.append(pseudo_x)
+                    y_train.append(case)
+                aux+=1
+
+# Sparse implementation for dev speed
+aux = 0
+
 # Getting paths to images
 y_val = []
 x_val = []
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                pseudo_x = io.imread(os.path.join(dataset_dir, 'val', case, image), as_gray = False)
-                x_val.append(pseudo_x)
-                y_val.append(case)
-
+                if (aux%10==0):
+                    pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', case, image))
+                    x_val.append(pseudo_x)
+                    y_val.append(case)
+                aux+=1
+                
 del pseudo_x              
 gc.collect()
     
-#%% Preprocessing
-from skimage.color import rgb2hsv
-from itertools import chain
+#%% Preprocessing & Feature Extraction
+### RBG ###
 
 # List to array
-x_train_arr = np.array(x_train, dtype = np.float16)
-x_val_arr = np.array(x_val, dtype = np.float16)
+x_train_arr = np.array(x_train)
+x_val_arr = np.array(x_val)
 
-del x_train
-del x_val
-gc.collect()
+# del x_train
+# del x_val
+# gc.collect()
 
-# Color Space Transformation: RGB --> HSV
+### Color Space Transformation: RGB --> HSV ###
 Y_val = []
 Y_train = []
 
 for i in range(0,x_train_arr.shape[0]):
-    x_train_arr[i] = rgb2hsv(x_train_arr[i])
+    x_train_arr[i] = cv2.cvtColor(x_train_arr[i],cv2.COLOR_RGB2HSV)
     Y_train.append(y_train[i])
     
 for i in range(0,x_val_arr.shape[0]):
-    x_val_arr[i] = rgb2hsv(x_val_arr[i])
+    x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
     Y_val.append(y_val[i])
+
+# Harris Corners
+dst = cv2.cornerHarris(x_val_arr[100,:,:,2], blockSize=2, ksize=3, k=0.04)
+
+# dilate to mark the corners
+dst = cv2.dilate(dst, None)
+x_val_arr[100,:,:,2][dst > 0.01 * dst.max()] = 255
+
+cv2.imshow('haris_corner', x_val_arr[100,:,:,2])
+cv2.waitKey()
 
 del y_train
 del y_val
@@ -74,39 +94,36 @@ gc.collect()
 
 #%% Feature Extraction
 
-feature_vector_train = np.zeros(x_train_arr.shape[0])
-feature_vector_val = np.zeros(x_val_arr.shape[0])
+mean_of_train = np.zeros(x_train_arr.shape[0])
+mean_of_val = np.zeros(x_val_arr.shape[0])
 
 # Mean of image
 for i in range(1,x_train_arr.shape[0]):
-    feature_vector_train[i] = np.mean(x_train_arr[i,:,:,2])
+    mean_of_train[i] = np.mean(x_train_arr[i,:,:,2])
     
 for i in range(1,x_val_arr.shape[0]):
-    feature_vector_val[i] = np.mean(x_val_arr[i,:,:,2])
+    mean_of_val[i] = np.mean(x_val_arr[i,:,:,2])
     
-# SIFT
+
 
 # LBP
 
-del x_train_arr
-del x_val_arr
-gc.collect()
+# del x_train_arr
+# del x_val_arr
+# gc.collect()
 
-#%% Inputs
+# #%% Inputs
 
-X_train = feature_vector_train[np.newaxis].T
-labels_train = np.where(np.array(Y_train) == 'les',1,0)
+# X_train = feature_vector_train[np.newaxis].T
+# Y_train = np.where(np.array(Y_train) == 'les',1,0)
 
 
-X_val = feature_vector_val[np.newaxis].T
-labels_val = np.where(np.array(Y_val) == 'les',1,0)
+# X_val = feature_vector_val[np.newaxis].T
+# Y_val = np.where(np.array(Y_val) == 'les',1,0)
 
-del feature_vector_train
-del feature_vector_val
-
-del Y_train
-del Y_val
-gc.collect()
+# del feature_vector_train
+# del feature_vector_val
+# gc.collect()
 
 #%%%%%%%%%%%%%%%%%%%%%%% Feature Selection %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -156,12 +173,12 @@ gc.collect()
 
 #%%%%%%%%%%%%%%%%%%% CLASSIFICATION %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-neigh = KNeighborsClassifier(n_neighbors=2)
-neigh.fit(X_train,labels_train)
+# neigh = KNeighborsClassifier(n_neighbors=2)
+# neigh.fit(X_train,labels_train)
     
-# Predictions
-print(neigh.predict([[1]])) # hard classification prediction
-print(neigh.predict_proba([[0.9]])) # confidence score prediction
+# # Predictions
+# print(neigh.predict([[1]])) # hard classification prediction
+# print(neigh.predict_proba([[0.9]])) # confidence score prediction
 
 
 
