@@ -5,7 +5,7 @@ Created on Tue Oct 26 15:24:50 2021
 @author: Manuel Ojeda & Alexandru Vasile
 """
 
-import tensorflow as tf
+# import tensorflow as tf
 import os
 import numpy as np
 from skimage import io
