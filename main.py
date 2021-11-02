@@ -22,26 +22,36 @@ dataset_dir = os.path.join(project_dir, 'dataset')
 img_size = (450, 600,3) # RGB imges!
 batch_size = 32
 
+# Sparse implementation for dev speed --> read every 10th image
+aux = 0
+
 # Getting paths to images
 y_train = []
 x_train = []
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
-                x_train.append(pseudo_x)
-                y_train.append(case)
-    
+                if (aux%10==0):
+                    pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
+                    x_train.append(pseudo_x)
+                    y_train.append(case)
+                aux+=1
+
+# Sparse implementation for dev speed
+aux = 0
+
 # Getting paths to images
 y_val = []
 x_val = []
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', case, image))
-                x_val.append(pseudo_x)
-                y_val.append(case)
-
+                if (aux%10==0):
+                    pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', case, image))
+                    x_val.append(pseudo_x)
+                    y_val.append(case)
+                aux+=1
+                
 del pseudo_x              
 gc.collect()
     
@@ -59,20 +69,21 @@ x_val_arr = np.array(x_val, dtype = np.uint8)
 
 # SIFT
 
+# dst = cv2.cornerHarris(gray_img, blockSize=2, ksize=3, k=0.04)
 
-sift = cv2.SIFT()
-kp, des = sift.detectAndCompute(x_train_arr[100])
+# sift = cv2.SIFT()
+# kp, des = sift.detectAndCompute(x_train_arr[100])
 
 ### Color Space Transformation: RGB --> HSV ###
 Y_val = []
 Y_train = []
 
 for i in range(0,x_train_arr.shape[0]):
-    # x_train_arr[i] = rgb2hsv(x_train_arr[i])
+    x_train_arr[i] = rgb2hsv(x_train_arr[i])
     Y_train.append(y_train[i])
     
 for i in range(0,x_val_arr.shape[0]):
-    # x_val_arr[i] = rgb2hsv(x_val_arr[i])
+    x_val_arr[i] = rgb2hsv(x_val_arr[i])
     Y_val.append(y_val[i])
 
 del y_train
