@@ -57,34 +57,36 @@ gc.collect()
     
 #%% Preprocessing & Feature Extraction
 ### RBG ###
-from skimage.color import rgb2hsv
 
 # List to array
-x_train_arr = np.array(x_train, dtype = np.uint8)
-x_val_arr = np.array(x_val, dtype = np.uint8)
+x_train_arr = np.array(x_train)
+x_val_arr = np.array(x_val)
 
 # del x_train
 # del x_val
 # gc.collect()
-
-# SIFT
-
-# dst = cv2.cornerHarris(gray_img, blockSize=2, ksize=3, k=0.04)
-
-# sift = cv2.SIFT()
-# kp, des = sift.detectAndCompute(x_train_arr[100])
 
 ### Color Space Transformation: RGB --> HSV ###
 Y_val = []
 Y_train = []
 
 for i in range(0,x_train_arr.shape[0]):
-    x_train_arr[i] = rgb2hsv(x_train_arr[i])
+    x_train_arr[i] = cv2.cvtColor(x_train_arr[i],cv2.COLOR_RGB2HSV)
     Y_train.append(y_train[i])
     
 for i in range(0,x_val_arr.shape[0]):
-    x_val_arr[i] = rgb2hsv(x_val_arr[i])
+    x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
     Y_val.append(y_val[i])
+
+# Harris Corners
+dst = cv2.cornerHarris(x_val_arr[100,:,:,2], blockSize=2, ksize=3, k=0.04)
+
+# dilate to mark the corners
+dst = cv2.dilate(dst, None)
+x_val_arr[100,:,:,2][dst > 0.01 * dst.max()] = 255
+
+cv2.imshow('haris_corner', x_val_arr[100,:,:,2])
+cv2.waitKey()
 
 del y_train
 del y_val
