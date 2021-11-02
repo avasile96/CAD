@@ -50,18 +50,18 @@ gc.collect()
 from skimage.color import rgb2hsv
 
 # List to array
-x_train_arr = np.array(x_train, dtype = np.float16())
-x_val_arr = np.array(x_val, dtype = np.float16)
+x_train_arr = np.array(x_train, dtype = np.uint8)
+x_val_arr = np.array(x_val, dtype = np.uint8)
 
-del x_train
-del x_val
-gc.collect()
+# del x_train
+# del x_val
+# gc.collect()
 
 # SIFT
 
 
 sift = cv2.SIFT()
-kp, des = sift.detectAndCompute(x_train_arr[100,:,:,:],None)
+kp, des = sift.detectAndCompute(x_train_arr[100])
 
 ### Color Space Transformation: RGB --> HSV ###
 Y_val = []
