@@ -159,7 +159,7 @@ y_val = np.array(Y_val)
 from sklearn.neighbors import KNeighborsClassifier
 
 # Classifier
-neigh = KNeighborsClassifier(n_neighbors=2)
+neigh = KNeighborsClassifier(n_neighbors=4)
 neigh.fit(x_train,y_train)
 
 KNN_predict = neigh.predict(x_val)
@@ -182,12 +182,12 @@ print('Naive Bayes classifier: ', accuracy)
 #%% SVM classifier
 from sklearn.svm import SVC
 
-svm_model_linear = SVC(kernel = 'linear', C = 3).fit(x_train, y_train)
+svm_model_linear = SVC(kernel = 'rbf', C = 3).fit(x_train, y_train)
 svm_predictions = svm_model_linear.predict(x_val)
  
 # model accuracy for X_test 
 accuracy = svm_model_linear.score(x_val, y_val)
-print('SVM classifier: ', accuracy)
+print('SVC classifier: ', accuracy)
  
 # creating a confusion matrix
 cm = confusion_matrix(y_val, svm_predictions)
@@ -196,7 +196,8 @@ cm = confusion_matrix(y_val, svm_predictions)
 #%% Decission tree classifier
 from sklearn.tree import DecisionTreeClassifier
 
-dt = DecisionTreeClassifier()
+# dt = DecisionTreeClassifier()
+dt = DecisionTreeClassifier(max_depth=2)  # This line works better than the previous one
 dt.fit(x_train, y_train)
 
 y_pred2 = dt.predict(x_val)
