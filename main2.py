@@ -9,6 +9,7 @@ Created on Tue Oct 26 15:24:50 2021
 import os
 import numpy as np
 from skimage import io
+from skimage.feature import local_binary_pattern
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 import cv2
@@ -19,12 +20,9 @@ source_dir = os.getcwd() # current working directory
 project_dir = os.path.dirname(source_dir) # where the dataset folder should be
 dataset_dir = os.path.join(project_dir, 'dataset2') # folder for the second challenge
 
-# Generator Parameters
-img_size = (450, 600,3) # RGB imges!
-batch_size = 32
 
-# Getting paths to images
-train_img_paths = []
+# Sparse implementation for dev speed --> read every 10th image
+aux = 0
 
 # Getting paths to images
 x_train = []
@@ -32,9 +30,14 @@ y_train = []
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                pseudo_x = io.imread(os.path.join(dataset_dir, 'train', case, image))
-                x_train.append(pseudo_x)
-                y_train.append(case)
+                if aux % 10 == 0:
+                    pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
+                    x_train.append(pseudo_x)
+                    y_train.append(case)
+                aux+=1
+
+# Sparse implementation for dev speed
+aux = 0
     
 # Getting paths to images
 x_val = []
@@ -42,12 +45,13 @@ y_val = []
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                pseudo_val = io.imread(os.path.join(dataset_dir, 'val', case, image))
-                x_val.append(pseudo_val)
-                y_val.append(case)
-
-pseudo_x=None                
-pseudo_val=None
+                if aux % 10 == 0:
+                    pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', case, image))
+                    x_val.append(pseudo_x)
+                    y_val.append(case)
+                aux+=1
+                
+del pseudo_x              
 gc.collect()
 # io.imshow(x_train[0])
 
@@ -55,63 +59,71 @@ gc.collect()
 from skimage.color import rgb2hsv
 
 # List to array
-# x_train_arr = np.array(x_train)
-# x_val_arr = np.array(x_val)
-
-# Section to select different images of all 3 different class
-# DON'T FORGET TO DELETE WHEN THE PROJECT IT'S DONE
-x_train_arr = x_train[100:300] + x_train[900:1100] + x_train[1800:1900]
-x_train_arr = np.array(x_train_arr)
+x_train_arr = np.array(x_train)
 x_val_arr = np.array(x_val)
 
-y_train = y_train[100:300] + y_train[900:1100] + y_train[1800:1900]
+
+### Color Space Transformation: RGB --> HSV ###
+Y_val = []
+Y_train = []
+
+for i in range(0,x_train_arr.shape[0]):
+    x_train_arr[i] = cv2.cvtColor(x_train_arr[i],cv2.COLOR_RGB2HSV)
+    Y_train.append(y_train[i])
+    
+for i in range(0,x_val_arr.shape[0]):
+    x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
+    Y_val.append(y_val[i])
 
 
-x_train = None
-x_val = None
+del y_train
+del y_val
 gc.collect()
-
-
-# Color Space Transformation
-m = 0
-x_train_hsv = np.zeros([500,450,600,3]) # instead of the 2000 images, because of memory
-x_val_hsv = np.zeros([500,450,600,3])
-
-for i in range(1,502,10):
-    if i!=1:
-        x_train_hsv[m:i-1,:,:,:] = rgb2hsv(x_train_arr[m:i-1,:,:,:])
-        x_val_hsv[m:i-1,:,:,:] = rgb2hsv(x_val_arr[m:i-1,:,:,:])
-        
-        m = i-1
-        
-    # every 100 images, we collect the garbage (RAM saving)
-    if i % 100 == 0:
-        gc.collect()
-
 
 #%% Feature extraction
 
-feature_vector_train = np.zeros(x_train_hsv.shape[0])
-feature_vector_val = np.zeros(x_val_hsv.shape[0])
+mean_of_train = np.zeros(x_train_arr.shape[0])
+mean_of_val = np.zeros(x_val_arr.shape[0])
 
 # Mean of image
-for i in range(1,x_train_hsv.shape[0]):
-    feature_vector_train[i] = np.mean(x_train_hsv[i,:,:,2])
-    feature_vector_val[i] = np.mean(x_val_hsv[i,:,:,2])
+for i in range(x_train_arr.shape[0]):
+    mean_of_train[i] = np.mean(x_train_arr[i,:,:,2])
+mean_of_train = mean_of_train[np.newaxis].T
     
+for i in range(x_val_arr.shape[0]):
+    mean_of_val[i] = np.mean(x_val_arr[i,:,:,2])
+mean_of_val = mean_of_val[np.newaxis].T
 # SIFT
 
 # LBP
+def lbp_process(array, bins, points, radius):
+    histograms = np.zeros((array.shape[0], bins))
+    for i in range(array.shape[0]):
+        img = cv2.cvtColor(array[i], cv2.COLOR_RGB2GRAY)
+        lbp_result = local_binary_pattern(img, points, radius, method='ror')
+        histogram_lbp, _ = np.histogram(lbp_result, bins=bins)
+        histogram_lbp = histogram_lbp[np.newaxis]
+        histograms[i,:] = histogram_lbp
+    return histograms
+
+# LBP features extracted for 24 points and radius 8
+train_lbp_vector_24_8 = lbp_process(x_train_arr, 256, 24, 8)
+val_lbp_vector_24_8 = lbp_process(x_val_arr, 256, 24, 8)
+
+# LBP features extracted for 8 points and radius 1
+train_lbp_vector_8_1 = lbp_process(x_train_arr, 256, 8, 1)
+val_lbp_vector_8_1 = lbp_process(x_val_arr, 256, 8, 1)
+
+
 
 
 #%% Inputs
 
+x_train = np.concatenate((mean_of_train, train_lbp_vector_24_8, train_lbp_vector_8_1), axis=1)
+x_val = np.concatenate((mean_of_val, val_lbp_vector_24_8, val_lbp_vector_8_1), axis=1)
+y_train = np.array(Y_train)
+y_val = np.array(Y_val)
 
-x_train = feature_vector_train[np.newaxis].T
-x_val = feature_vector_val[np.newaxis].T
-y_train = np.array(y_train)
-y_val = np.array(y_val)
-# np.where(y_train == 'bcc',1,0)
 
 #%% KNN Classifier
 from sklearn.neighbors import KNeighborsClassifier
