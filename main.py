@@ -78,32 +78,48 @@ for i in range(0,x_val_arr.shape[0]):
     x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
     Y_val.append(y_val[i])
 
-# Harris Corners
-dst = cv2.cornerHarris(x_val_arr[100,:,:,2], blockSize=2, ksize=3, k=0.04)
-
-# dilate to mark the corners
-dst = cv2.dilate(dst, None)
-x_val_arr[100,:,:,2][dst > 0.01 * dst.max()] = 255
-
-cv2.imshow('haris_corner', x_val_arr[100,:,:,2])
-cv2.waitKey()
-
 del y_train
 del y_val
 gc.collect()
+
+### Filtering out the  hair ###
+
+
+
+#%% Image Segmentation
+# Getting the kernel to be used in Top-Hat
+filterSize =(3, 3)
+kernel = cv2.getStructuringElement(cv2.MORPH_RECT, 
+                                   filterSize)
+  
+# Reading the image named 'input.jpg'
+input_image = x_train_arr[100]
+  
+# Applying the Top-Hat operation
+tophat_img = cv2.morphologyEx(input_image, 
+                              cv2.MORPH_BLACKHAT,
+                              kernel)
+  
+cv2.imshow("original", input_image)
+cv2.imshow("tophat", tophat_img)
+cv2.waitKey(5000)
+
 
 #%% Feature Extraction
 
 mean_of_train = np.zeros(x_train_arr.shape[0])
 mean_of_val = np.zeros(x_val_arr.shape[0])
 
-# Mean of image
+### Mean of image ###
 for i in range(1,x_train_arr.shape[0]):
     mean_of_train[i] = np.mean(x_train_arr[i,:,:,2])
     
 for i in range(1,x_val_arr.shape[0]):
     mean_of_val[i] = np.mean(x_val_arr[i,:,:,2])
     
+### Color -> Hue ###
+
+
 
 
 # LBP
