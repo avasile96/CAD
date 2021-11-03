@@ -58,10 +58,19 @@ gc.collect()
 #%% Preprocessing
 from skimage.color import rgb2hsv
 
+def hairRemoval(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    thresh, otsu = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    filter =(11, 11)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, filter)
+    black_hat = cv2.morphologyEx(otsu, cv2.MORPH_BLACKHAT,kernel)
+    inpaint_img = cv2.inpaint(img, black_hat, 7, flags=cv2.INPAINT_TELEA)
+    return inpaint_img
+
+
 # List to array
 x_train_arr = np.array(x_train)
 x_val_arr = np.array(x_val)
-
 
 ### Color Space Transformation: RGB --> HSV ###
 Y_val = []
@@ -74,6 +83,16 @@ for i in range(0,x_train_arr.shape[0]):
 for i in range(0,x_val_arr.shape[0]):
     x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
     Y_val.append(y_val[i])
+    
+### Hair Removal
+x_train_no_hair = np.zeros((x_train_arr.shape[0], x_train_arr.shape[1], x_train_arr.shape[2]))
+x_val_no_hair = np.zeros((x_val_arr.shape[0], x_val_arr.shape[1], x_val_arr.shape[2]))
+
+for i in range(x_train_no_hair.shape[0]):
+    x_train_no_hair[i] = hairRemoval(x_train[i])
+
+for i in range(x_val_no_hair.shape[0]):
+    x_val_no_hair[i] = hairRemoval(x_val[i])
 
 
 del y_train
@@ -99,28 +118,39 @@ mean_of_val = mean_of_val[np.newaxis].T
 def lbp_process(array, bins, points, radius):
     histograms = np.zeros((array.shape[0], bins))
     for i in range(array.shape[0]):
-        img = cv2.cvtColor(array[i], cv2.COLOR_RGB2GRAY)
+        if len(array[i].shape)==3:
+            img = cv2.cvtColor(array[i], cv2.COLOR_RGB2GRAY)
+        else:
+            img = array[i]
         lbp_result = local_binary_pattern(img, points, radius, method='ror')
         histogram_lbp, _ = np.histogram(lbp_result, bins=bins)
         histogram_lbp = histogram_lbp[np.newaxis]
         histograms[i,:] = histogram_lbp
     return histograms
 
-# LBP features extracted for 24 points and radius 8
+# LBP features extracted for 24 points and radius 8 from HSV images
 train_lbp_vector_24_8 = lbp_process(x_train_arr, 256, 24, 8)
 val_lbp_vector_24_8 = lbp_process(x_val_arr, 256, 24, 8)
 
-# LBP features extracted for 8 points and radius 1
+# LBP features extracted for 8 points and radius 1 from HSV images
 train_lbp_vector_8_1 = lbp_process(x_train_arr, 256, 8, 1)
 val_lbp_vector_8_1 = lbp_process(x_val_arr, 256, 8, 1)
 
+# LBP features extracted for 24 points and radius 8 from images without hair
+noHair_t_lbp_vector_24_8 = lbp_process(x_train_no_hair, 256, 24, 8)
+noHair_v_lbp_vector_24_8 = lbp_process(x_val_no_hair, 256, 24, 8)
 
+# LBP features extracted for 8 points and radius 1 from images without hair
+noHair_t_lbp_vector_8_1 = lbp_process(x_train_no_hair, 256, 8, 1)
+noHair_v_lbp_vector_8_1 = lbp_process(x_val_no_hair, 256, 8, 1)
 
 
 #%% Inputs
 
-x_train = np.concatenate((mean_of_train, train_lbp_vector_24_8, train_lbp_vector_8_1), axis=1)
-x_val = np.concatenate((mean_of_val, val_lbp_vector_24_8, val_lbp_vector_8_1), axis=1)
+x_train = np.concatenate((mean_of_train, train_lbp_vector_24_8, train_lbp_vector_8_1,
+                          noHair_t_lbp_vector_24_8, noHair_t_lbp_vector_24_8), axis=1)
+x_val = np.concatenate((mean_of_val, val_lbp_vector_24_8, val_lbp_vector_8_1,
+                        noHair_v_lbp_vector_24_8, noHair_v_lbp_vector_24_8), axis=1)
 y_train = np.array(Y_train)
 y_val = np.array(Y_val)
 
