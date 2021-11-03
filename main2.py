@@ -166,7 +166,7 @@ KNN_predict = neigh.predict(x_val)
 
 # accuracy on X_test
 acc_knn = neigh.score(x_val, y_val)
-print(acc_knn)
+print('KNN classifier: ', acc_knn)
 
 #%% Naive Bayes classifier
 from sklearn.naive_bayes import GaussianNB
@@ -176,7 +176,7 @@ gnb_predictions = gnb.predict(x_val)
 
 # accuracy on X_test
 accuracy = gnb.score(x_val, y_val)
-print(accuracy)
+print('Naive Bayes classifier: ', accuracy)
 
  
 #%% SVM classifier
@@ -187,7 +187,7 @@ svm_predictions = svm_model_linear.predict(x_val)
  
 # model accuracy for X_test 
 accuracy = svm_model_linear.score(x_val, y_val)
-print(accuracy)
+print('SVM classifier: ', accuracy)
  
 # creating a confusion matrix
 cm = confusion_matrix(y_val, svm_predictions)
@@ -201,7 +201,7 @@ dt.fit(x_train, y_train)
 
 y_pred2 = dt.predict(x_val)
 acc2 = accuracy_score(y_val, y_pred2)
-print(acc2)
+print('Decission tree classifier: ', acc2)
 
 
 #%% Random Forest
@@ -211,7 +211,7 @@ rf = RandomForestClassifier(max_depth=2, random_state=0)
 rf.fit(x_train, y_train)
 
 RF_predict = rf.predict(x_val)
-print(accuracy_score(y_val, RF_predict))
+print('Random Forest classifier: ', accuracy_score(y_val, RF_predict))
 
 
 #%% Extra trees classifier
@@ -221,6 +221,6 @@ et = ExtraTreesClassifier(n_estimators=100, random_state=0)
 et.fit(x_train, y_train)
 
 ET_predict = et.predict(x_val)
-print(accuracy_score(y_val, ET_predict))
+print('Extra trees classifier: ', accuracy_score(y_val, ET_predict))
 
 
