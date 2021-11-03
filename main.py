@@ -56,8 +56,6 @@ del pseudo_x
 gc.collect()
     
 #%% Preprocessing & Feature Extraction
-### RBG ###
-
 # List to array
 x_train_arr = np.array(x_train)
 x_val_arr = np.array(x_val)
@@ -83,26 +81,25 @@ del y_val
 gc.collect()
 
 ### Filtering out the  hair ###
+from hairRemoval import hairRemoval
 
+input_image = x_val_arr[72,:,:,2]
 
+tophat_img = hairRemoval(input_image, strength=2)
 
-#%% Image Segmentation
-# Getting the kernel to be used in Top-Hat
-filterSize =(3, 3)
-kernel = cv2.getStructuringElement(cv2.MORPH_RECT, 
-                                   filterSize)
-  
-# Reading the image named 'input.jpg'
-input_image = x_train_arr[100]
-  
-# Applying the Top-Hat operation
-tophat_img = cv2.morphologyEx(input_image, 
-                              cv2.MORPH_BLACKHAT,
-                              kernel)
-  
 cv2.imshow("original", input_image)
 cv2.imshow("tophat", tophat_img)
 cv2.waitKey(5000)
+
+#%% Image Segmentation
+from libb import matlab_style_gauss2D
+
+ker = matlab_style_gauss2D(shape=(450,600),sigma=0.1)
+print(np.amax(ker*1000))
+cv2.imshow("ker", ker*1000)
+
+# seg_img = cv2.
+# cv2.imshow("ker", tophat_img)
 
 
 #%% Feature Extraction
@@ -118,8 +115,6 @@ for i in range(1,x_val_arr.shape[0]):
     mean_of_val[i] = np.mean(x_val_arr[i,:,:,2])
     
 ### Color -> Hue ###
-
-
 
 
 # LBP
