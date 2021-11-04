@@ -173,6 +173,9 @@ filters = black_filters_delete(filters)
 images_filtered = filtered_image(x_train_no_hair[0:5,:,:], filters)
 images_filtered = np.array(images_filtered)
 
+# JUST IN CASE
+gc.collect()
+
 # LBP features extracted for 24 points and radius 8 from HSV images
 train_lbp_vector_24_8 = lbp_process(x_train_arr, 256, 24, 8)
 val_lbp_vector_24_8 = lbp_process(x_val_arr, 256, 24, 8)
@@ -189,6 +192,9 @@ noHair_v_lbp_vector_24_8 = lbp_process(x_val_no_hair, 256, 24, 8)
 noHair_t_lbp_vector_8_1 = lbp_process(x_train_no_hair, 256, 8, 1)
 noHair_v_lbp_vector_8_1 = lbp_process(x_val_no_hair, 256, 8, 1)
 
+# JUST IN CASE
+gc.collect()
+
 
 #%% Inputs
 
@@ -198,6 +204,9 @@ x_val = np.concatenate((mean_of_val, val_lbp_vector_24_8, val_lbp_vector_8_1,
                         noHair_v_lbp_vector_24_8, noHair_v_lbp_vector_24_8), axis=1)
 y_train = np.array(Y_train)
 y_val = np.array(Y_val)
+
+# JUST IN CASE
+gc.collect()
 
 
 #%% KNN Classifier
