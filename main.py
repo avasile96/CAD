@@ -92,14 +92,30 @@ cv2.imshow("tophat", tophat_img)
 cv2.waitKey(5000)
 
 #%% Image Segmentation
-from libb import matlab_style_gauss2D
+from libb import vignette
+from medpy.filter.smoothing import anisotropic_diffusion
 
-ker = matlab_style_gauss2D(shape=(450,600),sigma=0.1)
-print(np.amax(ker*1000))
-cv2.imshow("ker", ker*1000)
+cv2.imshow("tophat", tophat_img)
 
-# seg_img = cv2.
-# cv2.imshow("ker", tophat_img)
+#############
+
+# Filtering out the Noise
+img_filtered = anisotropic_diffusion(tophat_img)
+img_filtered = np.array((img_filtered/np.max(img_filtered))*255,dtype=np.uint8)
+cv2.imshow("tophat_filtered", img_filtered)
+
+# Contrast enhancement
+clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(8,8))
+equalized = clahe.apply(img_filtered)
+cv2.imshow("eq", equalized)
+
+# Mulitplying with gaussian for focus
+center_image = vignette(equalized)
+center_image = np.array((center_image/np.max(center_image))*255,dtype=np.uint8)
+cv2.imshow("center_image", center_image)
+
+# Contrast enhancement
+
 
 
 #%% Feature Extraction
