@@ -12,6 +12,7 @@ from skimage import io
 from sklearn.neighbors import KNeighborsClassifier
 import gc
 import cv2
+from libb import preprocessing
 
 # Directories
 source_dir = os.getcwd() # current working directory
@@ -70,53 +71,17 @@ Y_train = []
 
 for i in range(0,x_train_arr.shape[0]):
     x_train_arr[i] = cv2.cvtColor(x_train_arr[i],cv2.COLOR_RGB2HSV)
+    x_train_arr[i,:,:,2] = preprocessing(x_train_arr[i,:,:,2])
     Y_train.append(y_train[i])
     
 for i in range(0,x_val_arr.shape[0]):
     x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
+    x_val_arr[i,:,:,2] = preprocessing(x_val_arr[i,:,:,2])
     Y_val.append(y_val[i])
 
 del y_train
 del y_val
 gc.collect()
-
-### Filtering out the  hair ###
-from hairRemoval import hairRemoval
-
-input_image = x_val_arr[72,:,:,2]
-
-tophat_img = hairRemoval(input_image, strength=2)
-
-cv2.imshow("original", input_image)
-cv2.imshow("tophat", tophat_img)
-cv2.waitKey(5000)
-
-#%% Image Segmentation
-from libb import vignette
-from medpy.filter.smoothing import anisotropic_diffusion
-
-cv2.imshow("tophat", tophat_img)
-
-#############
-
-# Filtering out the Noise
-img_filtered = anisotropic_diffusion(tophat_img)
-img_filtered = np.array((img_filtered/np.max(img_filtered))*255,dtype=np.uint8)
-cv2.imshow("tophat_filtered", img_filtered)
-
-# Contrast enhancement
-clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(8,8))
-equalized = clahe.apply(img_filtered)
-cv2.imshow("eq", equalized)
-
-# Mulitplying with gaussian for focus
-center_image = vignette(equalized)
-center_image = np.array((center_image/np.max(center_image))*255,dtype=np.uint8)
-cv2.imshow("center_image", center_image)
-
-# Contrast enhancement
-
-
 
 #%% Feature Extraction
 
@@ -141,8 +106,8 @@ for i in range(1,x_val_arr.shape[0]):
 
 # #%% Inputs
 
-# X_train = feature_vector_train[np.newaxis].T
-# Y_train = np.where(np.array(Y_train) == 'les',1,0)
+X_train = mean_of_train[np.newaxis].T
+Y_train = np.where(np.array(Y_train) == 'les',1,0)
 
 
 # X_val = feature_vector_val[np.newaxis].T
@@ -200,8 +165,8 @@ for i in range(1,x_val_arr.shape[0]):
 
 #%%%%%%%%%%%%%%%%%%% CLASSIFICATION %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-# neigh = KNeighborsClassifier(n_neighbors=2)
-# neigh.fit(X_train,labels_train)
+neigh = KNeighborsClassifier(n_neighbors=2)
+neigh.fit(X_train,Y_train)
     
 # # Predictions
 # print(neigh.predict([[1]])) # hard classification prediction

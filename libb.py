@@ -7,7 +7,12 @@ Created on Wed Nov  3 14:52:54 2021
 
 import numpy as np
 import cv2
-
+from medpy.filter.smoothing import anisotropic_diffusion
+from skimage.filters import threshold_triangle
+from skimage.morphology import area_opening
+from sklearn.cluster import KMeans
+import skimage as io
+from hairRemoval import hairRemoval
 
 # # Harris Corners
 # dst = cv2.cornerHarris(x_val_arr[100,:,:,2], blockSize=2, ksize=3, k=0.04)
@@ -76,6 +81,62 @@ def vignette(input_image):
     #displaying the vignette filter image 
     # cv2.imshow('VIGNETTE', output)
     return output
+
+def preprocessing(input_image):
+
+
+    input_image = input_image
+
+    tophat_img = hairRemoval(input_image, strength=2)
+
+    # cv2.imshow("original", input_image)
+    # cv2.imshow("tophat", tophat_img)
+    # cv2.waitKey(5000)
+
+    # cv2.imshow("tophat", tophat_img)
+
+    # Filtering out the Noise
+    img_filtered = anisotropic_diffusion(tophat_img)
+    img_filtered = np.array((img_filtered/np.max(img_filtered))*255,dtype=np.uint8)
+    # cv2.imshow("tophat_filtered", img_filtered)
+
+    # Contrast enhancement
+    clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(8,8))
+    equalized = clahe.apply(img_filtered)
+    # cv2.imshow("eq", equalized)
+
+    # Mulitplying with gaussian for focus
+    center_image = vignette(equalized)
+    center_image = np.array((center_image/np.max(center_image))*255,dtype=np.uint8)
+    # cv2.imshow("center_image", center_image)
+    # io.imsave('sal.png', center_image)
+
+    # Thresholding
+    th_logical = center_image < threshold_triangle(center_image, nbins = 2)
+    # seg_im = th_logical * center_image
+    # cv2.imshow("seg_im", seg_im)
+
+    # Binary Morphology
+    op_img = area_opening(np.uint8(th_logical))*255 # opening
+    # cv2.imshow("op_img", op_img)
+
+    kernel = np.ones((5,5),np.uint8)
+    dil_img = cv2.dilate(op_img,kernel,iterations = 1) # closing
+    # cv2.imshow("dil_img", dil_img)
+
+    # Deleting border regions
+    mask1 = np.zeros_like(dil_img)
+    mask1 = cv2.circle(mask1, (300,225), 300, (255,255,255), -1)
+    # cv2.imshow("mask1", mask1)
+
+    seg_mask = dil_img*mask1/255
+    seg_mask = np.uint8(seg_mask>0)
+    # cv2.imshow("seg_mask", seg_mask*255)
+
+    # Getting the processed image
+    segim = seg_mask*center_image
+    # cv2.imshow("segim", segim)
+    return segim
     
 if __name__ == '__main__':
     pass

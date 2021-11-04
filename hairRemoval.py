@@ -1,7 +1,8 @@
 import cv2
+import numpy as np
 
 def hairRemoval(img, strength):
-    thresh, otsu = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    thresh, otsu = cv2.threshold(np.uint8(img), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     filter =(3, 3)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, filter)
     
