@@ -12,6 +12,8 @@ from skimage import io
 from skimage.feature import local_binary_pattern
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.preprocessing import StandardScaler
 import cv2
 import gc
 
@@ -30,7 +32,7 @@ y_train = []
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if aux % 10 == 0:
+                if aux % 20 == 0:
                     pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
                     x_train.append(pseudo_x)
                     y_train.append(case)
@@ -150,6 +152,14 @@ def filtered_image(array, filters):
         array_res.append(np.asarray(res))
     return array_res
 
+def lbps_to_gaborIMG(array, bins, points, radius):
+    x_temp = np.zeros((array.shape[0], array.shape[1]*bins))
+    for m in range(array.shape[0]):
+        lbp_gabor = lbp_process(array[m], bins, points, radius)
+        for n in range(lbp_gabor.shape[0]):
+            x_temp[m,n*bins:n*bins+bins] = lbp_gabor[n]
+    return x_temp
+
 # LBP
 def lbp_process(array, bins, points, radius):
     histograms = np.zeros((array.shape[0], bins))
@@ -159,7 +169,7 @@ def lbp_process(array, bins, points, radius):
         else:
             img = array[i]
         lbp_result = local_binary_pattern(img, points, radius, method='ror')
-        histogram_lbp, _ = np.histogram(lbp_result, bins=bins, density=True)
+        histogram_lbp, _ = np.histogram(lbp_result, bins=bins)
         histogram_lbp = histogram_lbp[np.newaxis]
         histograms[i,:] = histogram_lbp
     return histograms
@@ -169,44 +179,99 @@ def lbp_process(array, bins, points, radius):
 filters = build_filters()
 filters = black_filters_delete(filters)
 
-# Applying gabor filters
-images_filtered = filtered_image(x_train_no_hair[0:5,:,:], filters)
-images_filtered = np.array(images_filtered)
+num_bins = 256
+# Applying gabor filters to training set 24 points, 8 radius
+train_imgs_filtered = filtered_image(x_train_no_hair, filters)
+train_imgs_filtered = np.array(train_imgs_filtered)
+x_train_24_8 = lbps_to_gaborIMG(train_imgs_filtered, num_bins, 24, 8)
+
+# Applying gabor filters to training set 8 points, 1 radius
+train_imgs_filtered = filtered_image(x_train_no_hair, filters)
+train_imgs_filtered = np.array(train_imgs_filtered)
+x_train_8_1 = lbps_to_gaborIMG(train_imgs_filtered, num_bins, 8, 1)
+
+# Applying gabor filters to validation set 24 points, 8 radius
+val_imgs_filtered = filtered_image(x_val_no_hair, filters)
+val_imgs_filtered = np.array(val_imgs_filtered)
+x_val_24_8 = lbps_to_gaborIMG(val_imgs_filtered, num_bins, 24, 8)
+
+# Applying gabor filters to training set 8 points, 1 radius
+val_imgs_filtered = filtered_image(x_val_no_hair, filters)
+val_imgs_filtered = np.array(val_imgs_filtered)
+x_val_8_1 = lbps_to_gaborIMG(val_imgs_filtered, num_bins, 8, 1)
+
+x_train = np.concatenate((mean_of_train, x_train_24_8, x_train_8_1), axis=1)
+x_val = np.concatenate((mean_of_val, x_val_24_8, x_val_8_1), axis=1)
 
 # JUST IN CASE
+del train_imgs_filtered
+del val_imgs_filtered
+del x_train_24_8
+del x_val_24_8
 gc.collect()
 
+
+#%% Only LBPs 
+
 # LBP features extracted for 24 points and radius 8 from HSV images
-train_lbp_vector_24_8 = lbp_process(x_train_arr, 256, 24, 8)
-val_lbp_vector_24_8 = lbp_process(x_val_arr, 256, 24, 8)
+train_lbp_vector_24_8 = lbp_process(x_train_arr, num_bins, 24, 8)
+val_lbp_vector_24_8 = lbp_process(x_val_arr, num_bins, 24, 8)
 
 # LBP features extracted for 8 points and radius 1 from HSV images
-train_lbp_vector_8_1 = lbp_process(x_train_arr, 256, 8, 1)
-val_lbp_vector_8_1 = lbp_process(x_val_arr, 256, 8, 1)
+train_lbp_vector_8_1 = lbp_process(x_train_arr, num_bins, 8, 1)
+val_lbp_vector_8_1 = lbp_process(x_val_arr, num_bins, 8, 1)
 
 # LBP features extracted for 24 points and radius 8 from images without hair
-noHair_t_lbp_vector_24_8 = lbp_process(x_train_no_hair, 256, 24, 8)
-noHair_v_lbp_vector_24_8 = lbp_process(x_val_no_hair, 256, 24, 8)
+noHair_t_lbp_vector_24_8 = lbp_process(x_train_no_hair, num_bins, 24, 8)
+noHair_v_lbp_vector_24_8 = lbp_process(x_val_no_hair, num_bins, 24, 8)
 
 # LBP features extracted for 8 points and radius 1 from images without hair
-noHair_t_lbp_vector_8_1 = lbp_process(x_train_no_hair, 256, 8, 1)
-noHair_v_lbp_vector_8_1 = lbp_process(x_val_no_hair, 256, 8, 1)
+noHair_t_lbp_vector_8_1 = lbp_process(x_train_no_hair, num_bins, 8, 1)
+noHair_v_lbp_vector_8_1 = lbp_process(x_val_no_hair, num_bins, 8, 1)
 
-# JUST IN CASE
+del x_train_no_hair
+del x_val_no_hair
+
 gc.collect()
 
 
 #%% Inputs
 
-x_train = np.concatenate((mean_of_train, train_lbp_vector_24_8, train_lbp_vector_8_1,
-                          noHair_t_lbp_vector_24_8, noHair_t_lbp_vector_24_8), axis=1)
-x_val = np.concatenate((mean_of_val, val_lbp_vector_24_8, val_lbp_vector_8_1,
-                        noHair_v_lbp_vector_24_8, noHair_v_lbp_vector_24_8), axis=1)
+# x_train = np.concatenate((train_lbp_vector_24_8, train_lbp_vector_8_1,
+                          # noHair_t_lbp_vector_24_8, noHair_t_lbp_vector_8_1), axis=1)
+# x_val = np.concatenate((val_lbp_vector_24_8, val_lbp_vector_8_1,
+                        # noHair_v_lbp_vector_24_8, noHair_v_lbp_vector_8_1), axis=1)
 y_train = np.array(Y_train)
 y_val = np.array(Y_val)
 
 # JUST IN CASE
 gc.collect()
+del mean_of_train
+del train_lbp_vector_24_8
+del train_lbp_vector_8_1
+del noHair_t_lbp_vector_24_8
+del noHair_t_lbp_vector_8_1
+del mean_of_val
+del val_lbp_vector_24_8
+del val_lbp_vector_8_1
+del noHair_v_lbp_vector_24_8
+del noHair_v_lbp_vector_8_1
+
+
+
+#%% Feature selection
+param_kbest = SelectKBest(f_classif, k=1000)
+param_kbest.fit(x_train, y_train)
+x_train_kbest = param_kbest.transform(x_train)  # Then we transform both the training an the test set
+x_test_kbest = param_kbest.transform(x_val)
+
+# In this challenge, feature normalization with a standard scaler is very useful
+scaler = StandardScaler()
+
+# The function fit_transform makes both fitting and transformation. It is equivalent to the function fit
+# followed by the function transform
+x_train = scaler.fit_transform(x_train_kbest)  # Again, the fitting applied only on the training set
+x_val = scaler.transform(x_test_kbest)  # The test set instead is only transformed
 
 
 #%% KNN Classifier
