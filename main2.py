@@ -94,7 +94,7 @@ for i in range(x_train_no_hair.shape[0]):
 for i in range(x_val_no_hair.shape[0]):
     x_val_no_hair[i] = hairRemoval(x_val[i])
 
-
+# tst = lbp_process(np.array(images_filtered), 256, 8, 1)
 del y_train
 del y_val
 gc.collect()
@@ -114,6 +114,42 @@ for i in range(x_val_arr.shape[0]):
 mean_of_val = mean_of_val[np.newaxis].T
 # SIFT
 
+# Gabor filters
+def build_filters():
+    filters = []
+    ksize = 9
+    for theta in np.arange(0, np.pi, np.pi / 8):  # 8 ORIENTATIONS
+        for lamda in np.arange(0, np.pi, np.pi / 4):  # 4 FREQUENCIES, 32 FILTERS IN TOTAL
+            kern = cv2.getGaborKernel((ksize, ksize), 1.0, theta, lamda, 0.5, 0, ktype=cv2.CV_32F)
+            kern /= 1.5 * kern.sum()
+            filters.append(kern)
+    return filters
+
+def black_filters_delete(result):
+    result_gabor = []
+    for n in range(len(result)):
+        if n % 4 != 0:
+            result_gabor.append(result[n])
+    return result_gabor
+
+def process(img, filters):
+    accum = np.zeros_like(img)
+    for kern in filters:
+        fimg = cv2.filter2D(np.uint8(img), cv2.CV_8UC1, kern)
+        np.maximum(accum, fimg, accum)
+    return accum
+
+def filtered_image(array, filters):
+    # array_res = np.zeros_like(array)
+    array_res = []
+    for j in range(array.shape[0]):
+        res = []
+        for i in range(len(filters)):
+            res1 = process(array[j], filters[i])
+            res.append(np.asarray(res1))
+        array_res.append(np.asarray(res))
+    return array_res
+
 # LBP
 def lbp_process(array, bins, points, radius):
     histograms = np.zeros((array.shape[0], bins))
@@ -123,10 +159,19 @@ def lbp_process(array, bins, points, radius):
         else:
             img = array[i]
         lbp_result = local_binary_pattern(img, points, radius, method='ror')
-        histogram_lbp, _ = np.histogram(lbp_result, bins=bins)
+        histogram_lbp, _ = np.histogram(lbp_result, bins=bins, density=True)
         histogram_lbp = histogram_lbp[np.newaxis]
         histograms[i,:] = histogram_lbp
     return histograms
+
+
+# Code for generating Gabor filters and deleting black filters
+filters = build_filters()
+filters = black_filters_delete(filters)
+
+# Applying gabor filters
+images_filtered = filtered_image(x_train_no_hair[0:5,:,:], filters)
+images_filtered = np.array(images_filtered)
 
 # LBP features extracted for 24 points and radius 8 from HSV images
 train_lbp_vector_24_8 = lbp_process(x_train_arr, 256, 24, 8)
@@ -179,10 +224,10 @@ accuracy = gnb.score(x_val, y_val)
 print('Naive Bayes classifier: ', accuracy)
 
  
-#%% SVM classifier
+#%% SVC classifier
 from sklearn.svm import SVC
 
-svm_model_linear = SVC(kernel = 'rbf', C = 3).fit(x_train, y_train)
+svm_model_linear = SVC(kernel = 'sigmoid', C = 1).fit(x_train, y_train)
 svm_predictions = svm_model_linear.predict(x_val)
  
 # model accuracy for X_test 
