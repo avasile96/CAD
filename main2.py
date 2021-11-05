@@ -33,11 +33,11 @@ y_train = []
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if aux % 50 == 0:
-                    pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
-                    x_train.append(pseudo_x)
-                    y_train.append(case)
-                aux+=1
+                # if aux % 200 == 0:
+                pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
+                x_train.append(pseudo_x)
+                y_train.append(case)
+                # aux+=1
 
 # Sparse implementation for dev speed
 aux = 0
@@ -48,11 +48,11 @@ y_val = []
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if aux % 10 == 0:
-                    pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', case, image))
-                    x_val.append(pseudo_x)
-                    y_val.append(case)
-                aux+=1
+                # if aux % 100 == 0:
+                pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', case, image))
+                x_val.append(pseudo_x)
+                y_val.append(case)
+                # aux+=1
                 
 del pseudo_x              
 gc.collect()
@@ -64,12 +64,12 @@ gc.collect()
 x_train_arr = np.array(x_train)
 x_val_arr = np.array(x_val)
 mean_of_train_hue = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
-mean_of_train_sat = np.zeros(x_train_arr.shape[0])[np.newaxis].T
-mean_of_train_val = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+mean_of_train_sat = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
+mean_of_train_val = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
 
-mean_of_val_hue = np.zeros(x_train_arr.shape[0])[np.newaxis].T
-mean_of_val_sat = np.zeros(x_train_arr.shape[0])[np.newaxis].T
-mean_of_val_val = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+mean_of_val_hue = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
+mean_of_val_sat = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
+mean_of_val_val = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
 
 ### Color Space Transformation: RGB --> HSV ###
 Y_val = []
