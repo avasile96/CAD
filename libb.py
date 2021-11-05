@@ -82,10 +82,11 @@ def vignette(input_image):
     # cv2.imshow('VIGNETTE', output)
     return output
 
-def preprocessing(input_image):
+def preprocessing(img_hsv):
 
 
-    input_image = input_image
+    input_image = img_hsv[:,:,2]
+    segim = np.zeros_like(img_hsv)
 
     tophat_img = hairRemoval(input_image, strength=2)
 
@@ -134,9 +135,10 @@ def preprocessing(input_image):
     # cv2.imshow("seg_mask", seg_mask*255)
 
     # Getting the processed image
-    segim = seg_mask*center_image
-    cv2.imshow("segim", segim)
-    cv2.waitKey(5000)
+    for i in range (0,3):
+        segim[:,:,i] = seg_mask*img_hsv[:,:,i]
+    # cv2.imshow("segim", segim)
+    # cv2.waitKey(5000)
     return segim
     
 if __name__ == '__main__':

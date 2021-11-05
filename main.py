@@ -31,7 +31,7 @@ y_train = []
 x_train = []
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
-            if image.endswith(".jpg") and not image.startswith("."):
+            if image.endswith(".jpg") and not image.startswith("."): # look here for muliclass labeling
                 if (aux%100==0):
                     pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
                     x_train.append(pseudo_x)
@@ -68,16 +68,53 @@ x_val_arr = np.array(x_val)
 ### Color Space Transformation: RGB --> HSV ###
 Y_val = []
 Y_train = []
+mean_of_train_hue = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
+mean_of_train_sat = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+mean_of_train_val = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+
+mean_of_val_hue = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+mean_of_val_sat = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+mean_of_val_val = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+
+mean_of_val = np.zeros(x_val_arr.shape[0])
 
 for i in range(0,x_train_arr.shape[0]):
     x_train_arr[i] = cv2.cvtColor(x_train_arr[i],cv2.COLOR_RGB2HSV)
-    x_train_arr[i,:,:,2] = preprocessing(x_train_arr[i,:,:,2])
+    x_train_arr[i] = preprocessing(x_train_arr[i])
     Y_train.append(y_train[i])
     
+    filename_train = 'C:\\Users\\usuari\\Javascript_API\\preprocessing\\train\\{}_{}.jpg'.format(y_train[i],i)
+    cv2.imwrite(filename_train,x_train_arr[i,:,:,2])
+    
+    mean_of_train_hue[i] = np.mean(x_train_arr[i,:,:,0]) # getting the mean of the hue channel
+    mean_of_train_sat[i] = np.mean(x_train_arr[i,:,:,1]) # getting the mean of the hue channel
+    mean_of_train_val[i] = np.mean(x_train_arr[i,:,:,2]) # getting the mean of the hue channel
+    # cv2.imshow("segim",x_train_arr[i])
+    # cv2.waitKey(5000)
+
+
+
 for i in range(0,x_val_arr.shape[0]):
     x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
-    x_val_arr[i,:,:,2] = preprocessing(x_val_arr[i,:,:,2])
+    x_val_arr[i] = preprocessing(x_val_arr[i])
     Y_val.append(y_val[i])
+    
+    filename_val = 'C:\\Users\\usuari\\Javascript_API\\preprocessing\\val\\{}_{}.jpg'.format(y_val[i],i)
+    cv2.imwrite(filename_val,x_val_arr[i,:,:,2])
+    
+    mean_of_val_hue[i] = np.mean(x_train_arr[i,:,:,0]) # getting the mean of the hue channel
+    mean_of_val_sat[i] = np.mean(x_train_arr[i,:,:,1]) # getting the mean of the hue channel
+    mean_of_val_val[i] = np.mean(x_train_arr[i,:,:,2]) # getting the mean of the hue channel
+
+mean_of_train = np.concatenate((mean_of_train_hue, mean_of_train_sat, mean_of_train_val), axis=1)
+mean_of_val = np.concatenate((mean_of_val_hue, mean_of_val_sat, mean_of_val_val), axis=1)
+# save to csv file
+np.savetxt('mean_hsv_train.csv', mean_of_train, delimiter=',')
+np.savetxt('mean_hsv_val.csv', mean_of_val, delimiter=',')
+
+# Test reading
+load_hsv_train = np.loadtxt('mean_hsv_train.csv', dtype=np.float64, delimiter=',')
+load_hsv_val = np.loadtxt('mean_hsv_train.csv', dtype=np.float64, delimiter=',')
 
 del y_train
 del y_val
@@ -87,13 +124,6 @@ gc.collect()
 
 mean_of_train = np.zeros(x_train_arr.shape[0])
 mean_of_val = np.zeros(x_val_arr.shape[0])
-
-### Mean of image ###
-for i in range(1,x_train_arr.shape[0]):
-    mean_of_train[i] = np.mean(x_train_arr[i,:,:,2])
-    
-for i in range(1,x_val_arr.shape[0]):
-    mean_of_val[i] = np.mean(x_val_arr[i,:,:,2])
     
 ### Color -> Hue ###
 
