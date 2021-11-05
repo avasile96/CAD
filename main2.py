@@ -58,7 +58,6 @@ gc.collect()
 # io.imshow(x_train[0])
 
 #%% Preprocessing
-from skimage.color import rgb2hsv
 
 def hairRemoval(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
