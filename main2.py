@@ -16,6 +16,7 @@ from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.preprocessing import StandardScaler
 import cv2
 import gc
+from libb import preprocessing
 
 # Directories
 source_dir = os.getcwd() # current working directory
@@ -32,7 +33,7 @@ y_train = []
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if aux % 20 == 0:
+                if aux % 50 == 0:
                     pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
                     x_train.append(pseudo_x)
                     y_train.append(case)
@@ -59,6 +60,61 @@ gc.collect()
 
 #%% Preprocessing
 
+# List to array
+x_train_arr = np.array(x_train)
+x_val_arr = np.array(x_val)
+mean_of_train_hue = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
+mean_of_train_sat = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+mean_of_train_val = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+
+mean_of_val_hue = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+mean_of_val_sat = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+mean_of_val_val = np.zeros(x_train_arr.shape[0])[np.newaxis].T
+
+### Color Space Transformation: RGB --> HSV ###
+Y_val = []
+Y_train = []
+
+for i in range(0,x_train_arr.shape[0]):
+    x_train_arr[i] = cv2.cvtColor(x_train_arr[i],cv2.COLOR_RGB2HSV)
+    x_train_arr[i] = preprocessing(x_train_arr[i])
+    Y_train.append(y_train[i])
+    
+    filename_train = 'F:\\DISCO_DURO\\Mixto\\Subjects\\GitHub\\preprocessing2\\train\\{}_{}.jpg'.format(y_train[i],i)
+    cv2.imwrite(filename_train,x_train_arr[i,:,:,2])
+    
+    mean_of_train_hue[i] = np.mean(x_train_arr[i,:,:,0]) # getting the mean of the hue channel
+    mean_of_train_sat[i] = np.mean(x_train_arr[i,:,:,1]) # getting the mean of the sat channel
+    mean_of_train_val[i] = np.mean(x_train_arr[i,:,:,2]) # getting the mean of the val channel
+    # cv2.imshow("segim",x_train_arr[i])
+    # cv2.waitKey(5000)
+    
+    
+for i in range(0,x_val_arr.shape[0]):
+    x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
+    x_val_arr[i] = preprocessing(x_val_arr[i])
+    Y_val.append(y_val[i])
+    
+    filename_val = 'F:\\DISCO_DURO\\Mixto\\Subjects\\GitHub\\preprocessing2\\val\\{}_{}.jpg'.format(y_val[i],i)
+    cv2.imwrite(filename_val,x_val_arr[i,:,:,2])
+    
+    mean_of_val_hue[i] = np.mean(x_train_arr[i,:,:,0]) # getting the mean of the hue channel
+    mean_of_val_sat[i] = np.mean(x_train_arr[i,:,:,1]) # getting the mean of the sat channel
+    mean_of_val_val[i] = np.mean(x_train_arr[i,:,:,2]) # getting the mean of the val channel
+
+
+mean_of_train = np.concatenate((mean_of_train_hue, mean_of_train_sat, mean_of_train_val), axis=1)
+mean_of_val = np.concatenate((mean_of_val_hue, mean_of_val_sat, mean_of_val_val), axis=1)
+# save to csv file
+np.savetxt('mean_hsv_train.csv', mean_of_train, delimiter=',')
+np.savetxt('mean_hsv_val.csv', mean_of_val, delimiter=',')
+
+# Test reading
+# load_hsv_train = np.loadtxt('mean_hsv_train.csv', dtype=np.float64, delimiter=',')
+# load_hsv_val = np.loadtxt('mean_hsv_train.csv', dtype=np.float64, delimiter=',')
+    
+#%% Hair Removal
+
 def hairRemoval(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     thresh, otsu = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -69,23 +125,6 @@ def hairRemoval(img):
     return inpaint_img
 
 
-# List to array
-x_train_arr = np.array(x_train)
-x_val_arr = np.array(x_val)
-
-### Color Space Transformation: RGB --> HSV ###
-Y_val = []
-Y_train = []
-
-for i in range(0,x_train_arr.shape[0]):
-    x_train_arr[i] = cv2.cvtColor(x_train_arr[i],cv2.COLOR_RGB2HSV)
-    Y_train.append(y_train[i])
-    
-for i in range(0,x_val_arr.shape[0]):
-    x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
-    Y_val.append(y_val[i])
-    
-### Hair Removal
 x_train_no_hair = np.zeros((x_train_arr.shape[0], x_train_arr.shape[1], x_train_arr.shape[2]))
 x_val_no_hair = np.zeros((x_val_arr.shape[0], x_val_arr.shape[1], x_val_arr.shape[2]))
 
