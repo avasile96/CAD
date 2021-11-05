@@ -32,7 +32,7 @@ x_train = []
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if (aux%10==0):
+                if (aux%100==0):
                     pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
                     x_train.append(pseudo_x)
                     y_train.append(case)
@@ -47,7 +47,7 @@ x_val = []
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if (aux%10==0):
+                if (aux%100==0):
                     pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', case, image))
                     x_val.append(pseudo_x)
                     y_val.append(case)

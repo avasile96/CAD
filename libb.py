@@ -135,7 +135,8 @@ def preprocessing(input_image):
 
     # Getting the processed image
     segim = seg_mask*center_image
-    # cv2.imshow("segim", segim)
+    cv2.imshow("segim", segim)
+    cv2.waitKey(5000)
     return segim
     
 if __name__ == '__main__':
