@@ -21,7 +21,7 @@ from libb import preprocessing
 # Directories
 source_dir = os.getcwd() # current working directory
 project_dir = os.path.dirname(source_dir) # where the dataset folder should be
-dataset_dir = os.path.join(project_dir, 'dataset2') # folder for the second challenge
+dataset_dir = os.path.join(project_dir, 'preprocessing2') # folder for the second challenge
 
 
 # Sparse implementation for dev speed --> read every 10th image
@@ -30,14 +30,21 @@ aux = 0
 # Getting paths to images
 x_train = []
 y_train = []
-for case in os.listdir(os.path.join(dataset_dir, 'train')):
-    for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
-            if image.endswith(".jpg") and not image.startswith("."):
-                # if aux % 200 == 0:
-                pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
-                x_train.append(pseudo_x)
-                y_train.append(case)
-                # aux+=1
+# for case in os.listdir(os.path.join(dataset_dir, 'train')):
+#     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
+#             if image.endswith(".jpg") and not image.startswith("."):
+#                 # if aux % 200 == 0:
+#                 pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
+#                 x_train.append(pseudo_x)
+#                 y_train.append(case)
+#                 # aux+=1
+for image in os.listdir(os.path.join(dataset_dir, 'train')):
+    if image.endswith(".jpg") and not image.startswith("."):
+        # if aux % 200 == 0:
+        pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', image))
+        x_train.append(pseudo_x)
+        y_train.append(image[0:3])
+        # aux+=1
 
 # Sparse implementation for dev speed
 aux = 0
@@ -45,14 +52,21 @@ aux = 0
 # Getting paths to images
 x_val = []
 y_val = []
-for case in os.listdir(os.path.join(dataset_dir, 'val')):
-    for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
-            if image.endswith(".jpg") and not image.startswith("."):
-                # if aux % 100 == 0:
-                pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', case, image))
-                x_val.append(pseudo_x)
-                y_val.append(case)
-                # aux+=1
+# for case in os.listdir(os.path.join(dataset_dir, 'val')):
+#     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
+#             if image.endswith(".jpg") and not image.startswith("."):
+#                 # if aux % 100 == 0:
+#                 pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', case, image))
+#                 x_val.append(pseudo_x)
+#                 y_val.append(case)
+#                 # aux+=1
+for image in os.listdir(os.path.join(dataset_dir, 'val')):
+    if image.endswith(".jpg") and not image.startswith("."):
+        # if aux % 200 == 0:
+        pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', image))
+        x_val.append(pseudo_x)
+        y_val.append(image[0:3])
+        # aux+=1
                 
 del pseudo_x              
 gc.collect()
@@ -67,9 +81,9 @@ mean_of_train_hue = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxi
 mean_of_train_sat = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
 mean_of_train_val = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
 
-mean_of_val_hue = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
-mean_of_val_sat = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
-mean_of_val_val = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
+mean_of_val_hue = np.zeros(x_val_arr.shape[0], dtype = np.float32)[np.newaxis].T
+mean_of_val_sat = np.zeros(x_val_arr.shape[0], dtype = np.float32)[np.newaxis].T
+mean_of_val_val = np.zeros(x_val_arr.shape[0], dtype = np.float32)[np.newaxis].T
 
 ### Color Space Transformation: RGB --> HSV ###
 Y_val = []
@@ -80,8 +94,8 @@ for i in range(0,x_train_arr.shape[0]):
     x_train_arr[i] = preprocessing(x_train_arr[i])
     Y_train.append(y_train[i])
     
-    filename_train = 'F:\\DISCO_DURO\\Mixto\\Subjects\\GitHub\\preprocessing2\\train\\{}_{}.jpg'.format(y_train[i],i)
-    cv2.imwrite(filename_train,x_train_arr[i,:,:,2])
+    # filename_train = 'F:\\DISCO_DURO\\Mixto\\Subjects\\GitHub\\preprocessing2\\train\\{}_{}.jpg'.format(y_train[i],i)
+    # cv2.imwrite(filename_train,x_train_arr[i,:,:,2])
     
     mean_of_train_hue[i] = np.mean(x_train_arr[i,:,:,0]) # getting the mean of the hue channel
     mean_of_train_sat[i] = np.mean(x_train_arr[i,:,:,1]) # getting the mean of the sat channel
@@ -95,25 +109,29 @@ for i in range(0,x_val_arr.shape[0]):
     x_val_arr[i] = preprocessing(x_val_arr[i])
     Y_val.append(y_val[i])
     
-    filename_val = 'F:\\DISCO_DURO\\Mixto\\Subjects\\GitHub\\preprocessing2\\val\\{}_{}.jpg'.format(y_val[i],i)
-    cv2.imwrite(filename_val,x_val_arr[i,:,:,2])
+    # filename_val = 'F:\\DISCO_DURO\\Mixto\\Subjects\\GitHub\\preprocessing2\\val\\{}_{}.jpg'.format(y_val[i],i)
+    # cv2.imwrite(filename_val,x_val_arr[i,:,:,2])
     
-    mean_of_val_hue[i] = np.mean(x_train_arr[i,:,:,0]) # getting the mean of the hue channel
-    mean_of_val_sat[i] = np.mean(x_train_arr[i,:,:,1]) # getting the mean of the sat channel
-    mean_of_val_val[i] = np.mean(x_train_arr[i,:,:,2]) # getting the mean of the val channel
+    mean_of_val_hue[i] = np.mean(x_val_arr[i,:,:,0]) # getting the mean of the hue channel
+    mean_of_val_sat[i] = np.mean(x_val_arr[i,:,:,1]) # getting the mean of the sat channel
+    mean_of_val_val[i] = np.mean(x_val_arr[i,:,:,2]) # getting the mean of the val channel
 
 
 mean_of_train = np.concatenate((mean_of_train_hue, mean_of_train_sat, mean_of_train_val), axis=1)
 mean_of_val = np.concatenate((mean_of_val_hue, mean_of_val_sat, mean_of_val_val), axis=1)
 # save to csv file
-np.savetxt('mean_hsv_train.csv', mean_of_train, delimiter=',')
-np.savetxt('mean_hsv_val.csv', mean_of_val, delimiter=',')
+# np.savetxt('mean_hsv_train.csv', mean_of_train, delimiter=',')
+# np.savetxt('mean_hsv_val.csv', mean_of_val, delimiter=',')
 
 # Test reading
-# load_hsv_train = np.loadtxt('mean_hsv_train.csv', dtype=np.float64, delimiter=',')
-# load_hsv_val = np.loadtxt('mean_hsv_train.csv', dtype=np.float64, delimiter=',')
+# load_hsv_train = np.loadtxt('mean_hsv_train.csv', dtype=np.float32, delimiter=',')
+# load_hsv_val = np.loadtxt('mean_hsv_val.csv', dtype=np.float32, delimiter=',')
     
 #%% Hair Removal
+
+# List to array
+x_train_arr = np.array(x_train)
+x_val_arr = np.array(x_val)
 
 def hairRemoval(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -141,18 +159,14 @@ gc.collect()
 
 #%% Feature extraction
 
-mean_of_train = np.zeros(x_train_arr.shape[0])
-mean_of_val = np.zeros(x_val_arr.shape[0])
 
-# Mean of image
-for i in range(x_train_arr.shape[0]):
-    mean_of_train[i] = np.mean(x_train_arr[i,:,:,2])
-mean_of_train = mean_of_train[np.newaxis].T
-    
-for i in range(x_val_arr.shape[0]):
-    mean_of_val[i] = np.mean(x_val_arr[i,:,:,2])
-mean_of_val = mean_of_val[np.newaxis].T
-# SIFT
+# Test reading for csv files with mean values of HSV images
+load_hsv_train = np.loadtxt('mean_hsv_train.csv', dtype=np.float32, delimiter=',')
+load_hsv_val = np.loadtxt('mean_hsv_val.csv', dtype=np.float32, delimiter=',')
+
+mean_hue_train = load_hsv_train[:,0][np.newaxis].T
+mean_hue_val = load_hsv_val[:,0][np.newaxis].T
+
 
 # Gabor filters
 def build_filters():
@@ -186,8 +200,8 @@ def filtered_image(array, filters):
         res = []
         for i in range(len(filters)):
             res1 = process(array[j], filters[i])
-            res.append(np.asarray(res1))
-        array_res.append(np.asarray(res))
+            res.append(np.asarray(res1, dtype=np.float16))
+        array_res.append(np.asarray(res, dtype=np.float16))
     return array_res
 
 def lbps_to_gaborIMG(array, bins, points, radius):
@@ -228,6 +242,7 @@ train_imgs_filtered = filtered_image(x_train_no_hair, filters)
 train_imgs_filtered = np.array(train_imgs_filtered)
 x_train_8_1 = lbps_to_gaborIMG(train_imgs_filtered, num_bins, 8, 1)
 
+#%%
 # Applying gabor filters to validation set 24 points, 8 radius
 val_imgs_filtered = filtered_image(x_val_no_hair, filters)
 val_imgs_filtered = np.array(val_imgs_filtered)
@@ -238,8 +253,8 @@ val_imgs_filtered = filtered_image(x_val_no_hair, filters)
 val_imgs_filtered = np.array(val_imgs_filtered)
 x_val_8_1 = lbps_to_gaborIMG(val_imgs_filtered, num_bins, 8, 1)
 
-x_train = np.concatenate((mean_of_train, x_train_24_8, x_train_8_1), axis=1)
-x_val = np.concatenate((mean_of_val, x_val_24_8, x_val_8_1), axis=1)
+x_train = np.concatenate((mean_hue_train, x_train_24_8, x_train_8_1), axis=1)
+x_val = np.concatenate((mean_hue_val, x_val_24_8, x_val_8_1), axis=1)
 
 # JUST IN CASE
 del train_imgs_filtered
