@@ -28,100 +28,39 @@ aux = 0
 
 # Getting paths to images
 y_train = []
-x_train = []
+
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."): # look here for muliclass labeling
-                # if (aux%100==0):
-                pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
-                x_train.append(pseudo_x)
                 y_train.append(case)
-                # aux+=1
 
 # Sparse implementation for dev speed
 aux = 0
 
 # Getting paths to images
 y_val = []
-x_val = []
+
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                # if (aux%100==0):
-                pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', case, image))
-                x_val.append(pseudo_x)
                 y_val.append(case)
-                # aux+=1
-                
-del pseudo_x              
-gc.collect()
-    
-#%% Preprocessing & Feature Extraction
-# List to array
-x_train_arr = np.array(x_train)
-x_val_arr = np.array(x_val)
-
-del x_train
-del x_val
-gc.collect()
-
-### Color Space Transformation: RGB --> HSV ###
-Y_val = []
-Y_train = []
-mean_of_train_hue = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
-mean_of_train_sat = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
-mean_of_train_val = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
-
-mean_of_val_hue = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
-mean_of_val_sat = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
-mean_of_val_val = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
-
-mean_of_val = np.zeros(x_val_arr.shape[0])
-
-for i in range(0,x_train_arr.shape[0]):
-    x_train_arr[i] = cv2.cvtColor(x_train_arr[i],cv2.COLOR_RGB2HSV)
-    x_train_arr[i] = preprocessing(x_train_arr[i])
-    Y_train.append(y_train[i])
-    
-    filename_train = 'D:\\Uni\\Spain\\CADx\\preprocessing\\train\\{}_{}.jpg'.format(y_train[i],i)
-    cv2.imwrite(filename_train,x_train_arr[i,:,:,2])
-    
-    mean_of_train_hue[i] = np.mean(x_train_arr[i,:,:,0]) # getting the mean of the hue channel
-    mean_of_train_sat[i] = np.mean(x_train_arr[i,:,:,1]) # getting the mean of the hue channel
-    mean_of_train_val[i] = np.mean(x_train_arr[i,:,:,2]) # getting the mean of the hue channel
-    # cv2.imshow("segim",x_train_arr[i])
-    # cv2.waitKey(5000)
-
-
-
-for i in range(0,x_val_arr.shape[0]):
-    x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
-    x_val_arr[i] = preprocessing(x_val_arr[i])
-    Y_val.append(y_val[i])
-    
-    filename_val = 'D:\\Uni\\Spain\\CADx\\preprocessing\\val\\{}_{}.jpg'.format(y_val[i],i)
-    cv2.imwrite(filename_val,x_val_arr[i,:,:,2])
-    
-    mean_of_val_hue[i] = np.mean(x_train_arr[i,:,:,0]) # getting the mean of the hue channel
-    mean_of_val_sat[i] = np.mean(x_train_arr[i,:,:,1]) # getting the mean of the hue channel
-    mean_of_val_val[i] = np.mean(x_train_arr[i,:,:,2]) # getting the mean of the hue channel
-
-mean_of_train = np.concatenate((mean_of_train_hue, mean_of_train_sat, mean_of_train_val), axis=1)
-mean_of_val = np.concatenate((mean_of_val_hue, mean_of_val_sat, mean_of_val_val), axis=1)
-# save to csv file
-np.savetxt('mean_hsv_train.csv', mean_of_train, delimiter=',')
-np.savetxt('mean_hsv_val.csv', mean_of_val, delimiter=',')
+                           
+#%% Loading of data
 
 # Test reading
 load_hsv_train = np.loadtxt('mean_hsv_train.csv', dtype=np.float64, delimiter=',')[0:1200]
 load_hsv_val = np.loadtxt('mean_hsv_val.csv', dtype=np.float64, delimiter=',')[0:1200]
 
-del y_train
-del y_val
-gc.collect()
-
-#%% Loading the images 
 x_tr_load = []
+dataset_dir = os.path.join(project_dir, 'preprocessing') 
+for case in os.listdir(os.path.join(dataset_dir, 'train')):
+    if image.endswith(".jpg") and not image.startswith("."): # look here for muliclass labeling
+        # if (aux%100==0):
+        x_tr_load.append(cv2.imread(os.path.join(dataset_dir, 'train', case), cv2.IMREAD_GRAYSCALE))
+        
+x_load_array = np.array(x_tr_load,dtype = np.uint8)
+
+x_val_load = []
 dataset_dir = os.path.join(project_dir, 'preprocessing') 
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     if image.endswith(".jpg") and not image.startswith("."): # look here for muliclass labeling
@@ -132,16 +71,16 @@ x_load_array = np.array(x_tr_load,dtype = np.uint8)
         
         
 #%% Fine Segmentation
-from skimage.morphology import area_opening
-x_l_mask = np.array(x_load_array > 0, dtype = np.uint8)
-x_up_mask = np.array(x_load_array < 200 , dtype = np.uint8)
-x_mask = np.multiply(x_l_mask, x_up_mask)
+# from skimage.morphology import area_opening
+# x_l_mask = np.array(x_load_array > 0, dtype = np.uint8)
+# x_up_mask = np.array(x_load_array < 200 , dtype = np.uint8)
+# x_mask = np.multiply(x_l_mask, x_up_mask)
 
-x_mask_open = area_opening(np.uint8(x_mask))
+# x_mask_open = area_opening(np.uint8(x_mask))
 
-# for i in range(0,x_val_arr.shape[0]):
+# # for i in range(0,x_val_arr.shape[0]):
 
-x_load_array = np.multiply(x_mask, x_load_array)
+# x_load_array = np.multiply(x_mask, x_load_array)
 
                 
 #%% Feature Extraction
