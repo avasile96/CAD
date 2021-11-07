@@ -25,29 +25,35 @@ dataset_dir = os.path.join(project_dir, 'preprocessing') # folder for the second
 
 #%% Reading data
 
-# Training Labels
-y_train_pre = []
+# Test reading
+load_hsv_train = np.loadtxt('mean_hsv_train.csv', dtype=np.float64, delimiter=',')[0:1200]
+load_hsv_val = np.loadtxt('mean_hsv_val.csv', dtype=np.float64, delimiter=',')[0:1200]
 
-for image in os.listdir(os.path.join(dataset_dir, 'train')):
-    if image.endswith(".jpg") and not image.startswith("."):
-        y_train_pre.append(image[0:3])
-
-# Validation labels
-y_val_pre = []
-
-for image in os.listdir(os.path.join(dataset_dir, 'val')):
-    if image.endswith(".jpg") and not image.startswith("."):
-        y_val_pre.append(image[0:3])
-                
+x_tr_load = []
+y_train = []
+dataset_dir = os.path.join(project_dir, 'preprocessing') 
+for case in os.listdir(os.path.join(dataset_dir, 'train')):
+    if case.endswith(".jpg") and not case.startswith("."): 
+        x_tr_load.append(cv2.imread(os.path.join(dataset_dir, 'train', case), cv2.IMREAD_GRAYSCALE))
+        y_train.append(case[0:3])
         
-y_val_pre = np.array(y_val_pre)
+x_tr_array = np.array(x_tr_load,dtype = np.uint8)
+
+x_val_load = []
+y_val = []
+dataset_dir = os.path.join(project_dir, 'preprocessing') 
+for case in os.listdir(os.path.join(dataset_dir, 'train')):
+    if case.endswith(".jpg") and not case.startswith("."): 
+        x_tr_load.append(cv2.imread(os.path.join(dataset_dir, 'train', case), cv2.IMREAD_GRAYSCALE))
+        y_val.append(case[0:3])
+        
+x_val_array = np.array(x_val_load,dtype = np.uint8)
+
+
+y_val_pre = np.array(y_val)
 path = os.path.join(dataset_dir, 'y_labels_val_pre.csv')
 np.savetxt(path, y_val_pre, delimiter=',', fmt='%s')              
 gc.collect()
-
-
-
-mean_of_test = np.concatenate((mean_of_train_hue, mean_of_train_sat, mean_of_train_val), axis=1)
 
 
 #%% Functions
@@ -208,12 +214,12 @@ for image in os.listdir(os.path.join(dataset_dir, 'noHair_test')):
 # # save to csv file
 # np.savetxt('noHair_val_gb8_lbp248_lbp81.csv', x_noHair_val_concat, delimiter=',')
 
-# JUST IN CASE
-del val_imgs_filtered
-del x_val_24_8
-del x_val_8_1
+# # JUST IN CASE
+# del val_imgs_filtered
+# del x_val_24_8
+# del x_val_8_1
 
-gc.collect()
+# gc.collect()
 
 
 #%%
@@ -266,12 +272,12 @@ y_train = np.array(y_train)
 # y_val = np.array(y_val)
 
 # JUST IN CASE
-gc.collect()
+# gc.collect()
 # del noHair_t_lbp_vector_24_8
 # del noHair_t_lbp_vector_8_1
 
-path_test = os.path.join(dataset_dir, 'noHair_t_lbp248_lbp81.csv')
-np.savetxt(path_test, x_noHair_test_concat_og, delimiter=',')
+# path_test = os.path.join(dataset_dir, 'noHair_t_lbp248_lbp81.csv')
+# np.savetxt(path_test, x_noHair_test_concat_og, delimiter=',')
 
 
 #%% Feature selection
