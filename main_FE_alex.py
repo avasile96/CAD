@@ -9,13 +9,13 @@ Created on Tue Oct 26 15:24:50 2021
 import os
 import numpy as np
 from skimage.feature import local_binary_pattern
-from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.preprocessing import StandardScaler
 import cv2
 import gc
 from libb import preprocessing
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 # Directories
 source_dir = os.getcwd() # current working directory
@@ -23,9 +23,7 @@ project_dir = os.path.dirname(source_dir) # where the dataset folder should be
 dataset_dir = os.path.join(project_dir, 'preprocessing2') # folder for the second challenge
 
 
-#%%
-# Sparse implementation for dev speed --> read every 10th image
-aux = 0
+#%% Image acquisition
 
 # Getting paths to images
 x_train = []
@@ -33,18 +31,10 @@ y_train = []
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                # if aux % 200 == 0:
                 pseudo_x = cv2.imread(os.path.join(dataset_dir, 'train', case, image))
                 x_train.append(pseudo_x)
                 y_train.append(case)
-                # aux+=1
-# for image in os.listdir(os.path.join(dataset_dir, 'train')):
-    # if image.endswith(".jpg") and not image.startswith("."):
-        # if aux % 200 == 0:
-        # pseudo_x = cv2.imread(os.path.join(dataset_dir, 'test', image))
-        # x_train.append(pseudo_x)
-        # y_train_pre.append(image[0:3])
-        # aux+=1
+                
 
 # Sparse implementation for dev speed
 aux = 0
@@ -55,47 +45,35 @@ y_val = []
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                # if aux % 100 == 0:
                 pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val', case, image))
                 x_val.append(pseudo_x)
                 y_val.append(case)
-                # aux+=1
-# for image in os.listdir(os.path.join(dataset_dir, 'val')):
-    # if image.endswith(".jpg") and not image.startswith("."):
-        # if aux % 200 == 0:
-        # pseudo_x = cv2.imread(os.path.join(dataset_dir, 'val_noHair', image))
-        # x_val.append(pseudo_x)
-        # y_val_pre.append(image[0:3])
-        # aux+=1
                 
-# del pseudo_x
-# y_val_ = np.array(y_val_pre)
-# path = os.path.join(dataset_dir, 'y_labels_val_pre.csv')
-# np.savetxt(path, y_val_pre, delimiter=',', fmt='%s')              
+                
 gc.collect()
-# io.imshow(x_train[0])
 
 #%% Preprocessing
 
 # List to array
 x_train_arr = np.array(x_train)
-# x_val_arr = np.array(x_val)
+x_val_arr = np.array(x_val)
+
 mean_of_train_hue = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
 mean_of_train_sat = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
 mean_of_train_val = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
 
-# mean_of_val_hue = np.zeros(x_val_arr.shape[0], dtype = np.float32)[np.newaxis].T
-# mean_of_val_sat = np.zeros(x_val_arr.shape[0], dtype = np.float32)[np.newaxis].T
-# mean_of_val_val = np.zeros(x_val_arr.shape[0], dtype = np.float32)[np.newaxis].T
+mean_of_val_hue = np.zeros(x_val_arr.shape[0], dtype = np.float32)[np.newaxis].T
+mean_of_val_sat = np.zeros(x_val_arr.shape[0], dtype = np.float32)[np.newaxis].T
+mean_of_val_val = np.zeros(x_val_arr.shape[0], dtype = np.float32)[np.newaxis].T
 
 ### Color Space Transformation: RGB --> HSV ###
-# Y_val = []
-# Y_train = []
+Y_val = []
+Y_train = []
 
 for i in range(0,x_train_arr.shape[0]):
     x_train_arr[i] = cv2.cvtColor(x_train_arr[i],cv2.COLOR_RGB2HSV)
     x_train_arr[i] = preprocessing(x_train_arr[i])
-    # Y_train.append(y_train[i])
+    Y_train.append(y_train[i])
     
     # filename_train = 'F:\\DISCO_DURO\\Mixto\\Subjects\\GitHub\\preprocessing2\\train\\{}_{}.jpg'.format(y_train[i],i)
     # cv2.imwrite(filename_train,x_train_arr[i,:,:,2])
@@ -107,21 +85,21 @@ for i in range(0,x_train_arr.shape[0]):
     # cv2.waitKey(5000)
     
     
-# for i in range(0,x_val_arr.shape[0]):
-#     x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
-#     x_val_arr[i] = preprocessing(x_val_arr[i])
-#     Y_val.append(y_val[i])
+for i in range(0,x_val_arr.shape[0]):
+    x_val_arr[i] = cv2.cvtColor(x_val_arr[i],cv2.COLOR_RGB2HSV)
+    x_val_arr[i] = preprocessing(x_val_arr[i])
+    Y_val.append(y_val[i])
     
-#     # filename_val = 'F:\\DISCO_DURO\\Mixto\\Subjects\\GitHub\\preprocessing2\\val\\{}_{}.jpg'.format(y_val[i],i)
-#     # cv2.imwrite(filename_val,x_val_arr[i,:,:,2])
+    # filename_val = 'F:\\DISCO_DURO\\Mixto\\Subjects\\GitHub\\preprocessing2\\val\\{}_{}.jpg'.format(y_val[i],i)
+    # cv2.imwrite(filename_val,x_val_arr[i,:,:,2])
     
-#     mean_of_val_hue[i] = np.mean(x_val_arr[i,:,:,0]) # getting the mean of the hue channel
-#     mean_of_val_sat[i] = np.mean(x_val_arr[i,:,:,1]) # getting the mean of the sat channel
-#     mean_of_val_val[i] = np.mean(x_val_arr[i,:,:,2]) # getting the mean of the val channel
+    mean_of_val_hue[i] = np.mean(x_val_arr[i,:,:,0]) # getting the mean of the hue channel
+    mean_of_val_sat[i] = np.mean(x_val_arr[i,:,:,1]) # getting the mean of the sat channel
+    mean_of_val_val[i] = np.mean(x_val_arr[i,:,:,2]) # getting the mean of the val channel
 
 
 mean_of_test = np.concatenate((mean_of_train_hue, mean_of_train_sat, mean_of_train_val), axis=1)
-# mean_of_val = np.concatenate((mean_of_val_hue, mean_of_val_sat, mean_of_val_val), axis=1)
+mean_of_val = np.concatenate((mean_of_val_hue, mean_of_val_sat, mean_of_val_val), axis=1)
 # save to csv file
 # path_mean_of_test = os.path.join(dataset_dir, 'mean_hsv_test.csv')
 # np.savetxt(path_mean_of_test, mean_of_test, delimiter=',')
@@ -131,7 +109,7 @@ mean_of_test = np.concatenate((mean_of_train_hue, mean_of_train_sat, mean_of_tra
 # # load_hsv_train = np.loadtxt('mean_hsv_train.csv', dtype=np.float32, delimiter=',')
 # # load_hsv_val = np.loadtxt('mean_hsv_val.csv', dtype=np.float32, delimiter=',')
 
-#%%
+#%% Hair Removal
 
 # noHair_train_path = os.path.join(dataset_dir, 'noHair_test')
 # preprocess_path = os.path.join(dataset_dir, 'preprocess_test')
@@ -157,45 +135,10 @@ mean_of_test = np.concatenate((mean_of_train_hue, mean_of_train_sat, mean_of_tra
 #     filename_preprocess_test = os.path.join(preprocess_path, str(i) + '.jpg')
 #     cv2.imwrite(filename_preprocess_test, img_gray)
 
-#%% Hair Removal
 
-# noHair_train_path = os.path.join(dataset_dir, 'train_noHair')
-# noHair_val_path = os.path.join(dataset_dir, 'val_noHair')
+# gc.collect()
 
-# # # List to array
-# x_train_arr = np.array(x_train)
-# x_val_arr = np.array(x_val)
-
-# def hairRemoval(img):
-#     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-#     thresh, otsu = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-#     filter =(11, 11)
-#     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, filter)
-#     black_hat = cv2.morphologyEx(otsu, cv2.MORPH_BLACKHAT,kernel)
-#     inpaint_img = cv2.inpaint(img, black_hat, 7, flags=cv2.INPAINT_TELEA)
-#     return inpaint_img
-
-
-# # x_train_no_hair = np.zeros((x_train_arr.shape[0], x_train_arr.shape[1], x_train_arr.shape[2]))
-# # x_val_no_hair = np.zeros((x_val_arr.shape[0], x_val_arr.shape[1], x_val_arr.shape[2]))
-
-# for i in range(x_train_arr.shape[0]):
-#     img = hairRemoval(x_train_arr[i])
-    
-#     # filename_train = 'F:\\DISCO_DURO\\Mixto\\Subjects\\GitHub\\preprocessing2\\train\\{}_{}.jpg'.format(y_train[i],i)
-#     filename_train = os.path.join(noHair_train_path, name_img_train[i])
-#     cv2.imwrite(filename_train, img)
-
-# for i in range(x_val_arr.shape[0]):
-#     img = hairRemoval(x_val_arr[i])
-    
-#     filename_val = os.path.join(noHair_val_path, name_img_val[i])
-#     cv2.imwrite(filename_val, img)
-
-
-gc.collect()
-
-#%% Feature extraction
+#%% Loading CSV files
 
 # # Test reading for csv files with mean values of HSV images
 # load_hsv_train = np.loadtxt('mean_hsv_train.csv', dtype=np.float32, delimiter=',')
@@ -269,23 +212,23 @@ def lbp_process(array, bins, points, radius):
 num_bins = 256
 
 
-#%% Only LBPs 
+#%% Only LBPs different configurations
 
 # List to array
-# x_train_arr = np.array(x_train)
-# x_val_arr = np.array(x_val)
+x_train_arr = np.array(x_train)
+x_val_arr = np.array(x_val)
 
 
 # LBP features extracted for 24 points and radius 8 from HSV images
-# tst_lbp_vector_24_8 = lbp_process(x_train_arr, num_bins, 24, 8)
-# val_lbp_vector_24_8 = lbp_process(x_val_arr, num_bins, 24, 8)
+tst_lbp_vector_24_8 = lbp_process(x_train_arr, num_bins, 24, 8)
+val_lbp_vector_24_8 = lbp_process(x_val_arr, num_bins, 24, 8)
 
 # LBP features extracted for 8 points and radius 1 from HSV images
-# tst_lbp_vector_8_1 = lbp_process(x_train_arr, num_bins, 8, 1)
-# val_lbp_vector_8_1 = lbp_process(x_val_arr, num_bins, 8, 1)
+tst_lbp_vector_8_1 = lbp_process(x_train_arr, num_bins, 8, 1)
+val_lbp_vector_8_1 = lbp_process(x_val_arr, num_bins, 8, 1)
 
 
-#%% 
+#%% Concatenate different vectors, if needed
 
 # x_train = np.concatenate((mean_hue_train, train_lbp_vector_24_8, train_lbp_vector_8_1), axis=1)
 # x_val = np.concatenate((mean_hue_val, val_lbp_vector_24_8, val_lbp_vector_8_1), axis=1)
@@ -307,97 +250,37 @@ num_bins = 256
 # Code for generating Gabor filters and deleting black filters
 filters = build_filters()
 filters = black_filters_delete(filters)
-x_noHair_train_concat = np.zeros((2000,4096))
-aux = 0
-for image in os.listdir(os.path.join(dataset_dir, 'train_noHair')):
-    img = cv2.imread(os.path.join(dataset_dir, 'train_noHair', image))
-    img = img[np.newaxis]
-    # Applying gabor filters to training set 24 points, 8 radius
-    train_imgs_filtered = filtered_image(img, filters)
-    train_imgs_filtered = np.array(train_imgs_filtered)
-    x_train_24_8 = lbps_to_gaborIMG(train_imgs_filtered, num_bins, 24, 8)
-    
-    # Applying gabor filters to training set 8 points, 1 radius
-    train_imgs_filtered = filtered_image(img, filters)
-    train_imgs_filtered = np.array(train_imgs_filtered)
-    x_train_8_1 = lbps_to_gaborIMG(train_imgs_filtered, num_bins, 8, 1)
-    
-    temp = np.concatenate((x_train_24_8, x_train_8_1), axis=1)
-    x_noHair_train_concat[aux] = temp
-    aux+=1
 
-#%%
 
-# Code for generating Gabor filters and deleting black filters
-filters = build_filters()
-filters = black_filters_delete(filters)
-# Applying gabor filters to validation set 24 points, 8 radius
-# val_imgs_filtered = filtered_image(x_train_arr, filters)
-# val_imgs_filtered = np.array(val_imgs_filtered)
-# tst_gabor_24_8 = lbps_to_gaborIMG(val_imgs_filtered, num_bins, 24, 8)
+# Applying gabor filters to validation different configurations
+val_imgs_filtered = filtered_image(x_val_arr, filters)
+val_imgs_filtered = np.array(val_imgs_filtered)
 
-# tst_gabor_8_1 = lbps_to_gaborIMG(val_imgs_filtered, num_bins, 8, 1)
+val_gabor_24_8 = lbps_to_gaborIMG(val_imgs_filtered, num_bins, 24, 8)
+val_gabor_8_1 = lbps_to_gaborIMG(val_imgs_filtered, num_bins, 8, 1)
+
+
+# Applying gabor filters to training different configurations
+train_imgs_filtered = filtered_image(x_train_arr, filters)
+train_imgs_filtered = np.array(train_imgs_filtered)
+
+train_gabor_24_8 = lbps_to_gaborIMG(train_imgs_filtered, num_bins, 24, 8)
+train_gabor_8_1 = lbps_to_gaborIMG(train_imgs_filtered, num_bins, 8, 1)
+
 
 #%%
 # del train_imgs_filtered
 # del x_train_24_8
 # del x_train_8_1
 
-tst_noHair_val_concat = np.zeros((226,4096), dtype=np.float32)
-aux = 0
-for image in os.listdir(os.path.join(dataset_dir, 'noHair_test')):
-    img = cv2.imread(os.path.join(dataset_dir, 'noHair_test', image))
-    img = img[np.newaxis]
-    # Applying gabor filters to validation set 24 points, 8 radius
-    val_imgs_filtered = filtered_image(img, filters)
-    val_imgs_filtered = np.array(val_imgs_filtered)
-    tst_24_8 = lbps_to_gaborIMG(val_imgs_filtered, num_bins, 24, 8)
-    
-    # Applying gabor filters to training set 8 points, 1 radius
-    tst_8_1 = lbps_to_gaborIMG(val_imgs_filtered, num_bins, 8, 1)
-    
-    temp = np.concatenate((tst_24_8, tst_8_1), axis=1)
-    tst_noHair_val_concat[aux] = temp
-    aux+=1
 
 #%%
 
 # # save to csv file
 # np.savetxt('noHair_val_gb8_lbp248_lbp81.csv', x_noHair_val_concat, delimiter=',')
 
-# JUST IN CASE
-del val_imgs_filtered
-del x_val_24_8
-del x_val_8_1
-
 gc.collect()
 
-
-#%%
-
-x_noHair_test_concat_og = np.zeros((226,512), dtype=np.float32)
-# x_noHair_val_concat_og = np.zeros((500,512), dtype=np.float32)
-aux = 0
-for image in os.listdir(os.path.join(dataset_dir, 'noHair_test')):
-    img = cv2.imread(os.path.join(dataset_dir, 'noHair_test', image))
-    img = img[np.newaxis]
-    # LBP features extracted for 24 points and radius 8 from images without hair
-    noHair_t_lbp_vector_24_8 = lbp_process(img, num_bins, 24, 8)
-    # noHair_v_lbp_vector_24_8 = lbp_process(img, num_bins, 24, 8)
-    
-    # LBP features extracted for 8 points and radius 1 from images without hair
-    noHair_t_lbp_vector_8_1 = lbp_process(img, num_bins, 8, 1)
-    # noHair_v_lbp_vector_8_1 = lbp_process(img, num_bins, 8, 1)
-    
-    # temp_val = np.concatenate((noHair_v_lbp_vector_24_8, noHair_v_lbp_vector_8_1), axis=1)
-    temp_train = np.concatenate((noHair_t_lbp_vector_24_8, noHair_t_lbp_vector_8_1), axis=1)
-    # x_noHair_val_concat_og[aux] = temp_val
-    x_noHair_test_concat_og[aux] = temp_train
-    aux+=1
-
-
-
-gc.collect()
 
 #%%
 
@@ -420,19 +303,16 @@ gc.collect()
 #                         x_noHair_val_concat_og), axis=1)
 
 y_train = np.array(y_train)
-# y_val = np.array(y_val)
+y_val = np.array(y_val)
 
 # JUST IN CASE
 gc.collect()
-# del noHair_t_lbp_vector_24_8
-# del noHair_t_lbp_vector_8_1
 
-path_test = os.path.join(dataset_dir, 'noHair_t_lbp248_lbp81.csv')
-np.savetxt(path_test, x_noHair_test_concat_og, delimiter=',')
 
 
 #%% Feature selection
-param_kbest = SelectKBest(f_classif, k=1000)
+
+param_kbest = SelectKBest(f_classif, k=2000)
 param_kbest.fit(x_train, y_train)
 x_train_kbest = param_kbest.transform(x_train)  # Then we transform both the training an the test set
 x_test_kbest = param_kbest.transform(x_val)
@@ -448,18 +328,27 @@ x_val = scaler.transform(x_test_kbest)  # The test set instead is only transform
 # x_train = x_train_kbest
 # x_val = x_test_kbest
 
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=33)
+
+
 #%% KNN Classifier
+
 from sklearn.neighbors import KNeighborsClassifier
 
-# Classifier
-neigh = KNeighborsClassifier(n_neighbors=12)
-neigh.fit(x_train,y_train)
+param_grid_knn = {'n_neighbors': [3, 7, 15, 30]}
 
-KNN_predict = neigh.predict(x_val)
+# Classifier
+grid_search_knn = GridSearchCV(KNeighborsClassifier(), param_grid_knn, cv=cv, refit=True)
+grid_search_knn.fit(x_train, y_train)
+params_best_knn = grid_search_knn.best_params_
+print('Best parameters for kNN are = ', params_best_knn)
+
+y_pred_knn = grid_search_knn.predict(x_val)
 
 # accuracy on X_test
-acc_knn = neigh.score(x_val, y_val)
-print('KNN classifier: ', acc_knn)
+acc_knn = accuracy_score(y_val, y_pred_knn)
+print("Accuracy kNN is = ", acc_knn)
+
 
 #%% Naive Bayes classifier
 from sklearn.naive_bayes import GaussianNB
@@ -468,53 +357,112 @@ gnb = GaussianNB().fit(x_train, y_train)
 gnb_predictions = gnb.predict(x_val)
 
 # accuracy on X_test
-accuracy = gnb.score(x_val, y_val)
-print('Naive Bayes classifier: ', accuracy)
+acc_NB = gnb.score(x_val, y_val)
+print('Naive Bayes classifier: ', acc_NB)
 
- 
+
 #%% SVC classifier
 from sklearn.svm import SVC
 
-svm_model_linear = SVC(kernel = 'rbf', C = 3).fit(x_train, y_train)
-svm_predictions = svm_model_linear.predict(x_val)
+parameters = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4],
+                           'C': [0.01, 1, 3, 10, 100, 1000]},
+                          {'kernel': ['poly'], 'C': [0.01, 3, 10, 100, 1000]},
+                          {'kernel': ['sigmoid'], 'C': [0.01, 3, 10, 100, 1000]}
+                          ]
+svc = SVC()
+clf = GridSearchCV(svc, parameters, cv=cv, refit=True)
+clf.fit(x_train, y_train)
+
+params_best_SVC = clf.best_params_
+print('Best parameters for SVC with DD for are = ', params_best_SVC)
+
+y_pred_svc = clf.predict(x_val)
  
 # model accuracy for X_test 
-accuracy = svm_model_linear.score(x_val, y_val)
-print('SVC classifier: ', accuracy)
- 
-# creating a confusion matrix
-cm = confusion_matrix(y_val, svm_predictions)
+acc_SVC = accuracy_score(y_val, y_pred_svc)
+print("Accuracy SVC with DD is = ", acc_SVC)
 
 
 #%% Decission tree classifier
 from sklearn.tree import DecisionTreeClassifier
 
-# dt = DecisionTreeClassifier()
-dt = DecisionTreeClassifier(max_depth=2)  # This line works better than the previous one
-dt.fit(x_train, y_train)
+dtc = DecisionTreeClassifier()
+param_grid_dt = {
+    'max_features': ['auto', 'sqrt', 'log2'],
+    'max_depth': [2, 8, 10, 15, 20, 35, 50],
+    'criterion': ['gini', 'entropy']
+}
 
-y_pred2 = dt.predict(x_val)
-acc2 = accuracy_score(y_val, y_pred2)
-print('Decission tree classifier: ', acc2)
+GS_dtc = GridSearchCV(estimator=dtc, param_grid=param_grid_dt, cv=cv, refit=True)
+GS_dtc.fit(x_train, y_train)
+params_best_dt = GS_dtc.best_params_
+print('Best parameters for Random forest are = ', params_best_dt)
+
+y_pred = GS_dtc.predict(x_val)
+acc_DT = accuracy_score(y_val, y_pred)
+print("Accuracy Random forest is = ", acc_DT)
 
 
 #%% Random Forest
 from sklearn.ensemble import RandomForestClassifier
 
-rf = RandomForestClassifier(max_depth=30, random_state=0)
-rf.fit(x_train, y_train)
+rfc = RandomForestClassifier(random_state=42)
+param_grid_rf = {
+    'n_estimators': [30, 100, 250, 1000],
+    'max_features': ['auto', 'sqrt', 'log2'],
+    'max_depth': [2, 8, 10, 15, 20, 35, 50],
+    'criterion': ['gini', 'entropy']
+}
 
-RF_predict = rf.predict(x_val)
-print('Random Forest classifier: ', accuracy_score(y_val, RF_predict))
+GS_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid_rf, cv=cv, refit=True)
+GS_rfc.fit(x_train, y_train)
+params_best_RF = GS_rfc.best_params_
+print('Best parameters for Random forest are = ', params_best_RF)
+
+y_pred = GS_rfc.predict(x_val)
+acc_RF = accuracy_score(y_val, y_pred)
+print("Accuracy Random forest is = ", acc_RF)
 
 
 #%% Extra trees classifier
 from sklearn.ensemble import ExtraTreesClassifier
 
-et = ExtraTreesClassifier(n_estimators=100, random_state=0)
-et.fit(x_train, y_train)
+etc = ExtraTreesClassifier(random_state=42)
+param_grid_et = {
+    'n_estimators': [30, 100, 250, 1000],
+    'max_features': ['auto', 'sqrt', 'log2'],
+    'max_depth': [2, 8, 10, 15, 20, 35, 50],
+    'criterion': ['gini', 'entropy']
+}
 
-ET_predict = et.predict(x_val)
-print('Extra trees classifier: ', accuracy_score(y_val, ET_predict))
+GS_etc = GridSearchCV(estimator=etc, param_grid=param_grid_et, cv=cv, refit=True)
+GS_etc.fit(x_train, y_train)
+params_best_ET = GS_etc.best_params_
+print('Best parameters for Extra trees are = ', params_best_ET)
+
+y_pred = GS_etc.predict(x_val)
+acc_ET = accuracy_score(y_val, y_pred)
+print("Accuracy Extra trees is = ", acc_ET)
+
+
+#%% Gradient Boosting Classifier
+from sklearn.ensemble import GradientBoostingClassifier
+
+gbc = GradientBoostingClassifier(random_state=29)
+param_grid_gb = {
+    'criterion': ['deviance', 'exponential'],
+    'learning_rate': [0.1, 0.01, 0.001, 0.3, 0.003, 0.003],
+    'max_features': ['auto', 'sqrt', 'log2'],
+    'max_depth': [3, 8, 10, 15, 20, 35, 50],
+}
+
+GS_gbc = GridSearchCV(estimator=gbc, param_grid=param_grid_gb, cv=cv, refit=True)
+GS_gbc.fit(x_train, y_train)
+params_best_GB = GS_gbc.best_params_
+print('Best parameters for Gradient boosting are = ', params_best_GB)
+
+y_pred = GS_gbc.predict(x_val)
+acc_GB = accuracy_score(y_val, y_pred)
+print("Accuracy Gradient boosting is = ", acc_GB)
 
 

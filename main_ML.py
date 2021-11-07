@@ -50,9 +50,9 @@ nH_lbp_train = np.loadtxt(nH_lbp_train_path, dtype=np.float32, delimiter=',')
 nH_lbp_val = np.loadtxt(nH_lbp_val_path, dtype=np.float32, delimiter=',')
 
 # Concatenate all the files to get x_train and x_val
-x_train = np.concatenate((mean_hue_train, gb_lbp_train, nH_gb_lbp_train,
+x_train = np.concatenate((mean_hue_train, nH_gb_lbp_train, gb_lbp_train,
                           nH_lbp_train), axis=1)
-x_val = np.concatenate((mean_hue_val, gb_lbp_val, nH_gb_lbp_val,
+x_val = np.concatenate((mean_hue_val, nH_gb_lbp_val, gb_lbp_val,
                         nH_lbp_val), axis=1)
 
 # save to csv file, WHEN FINAL FILE IS READY
@@ -77,22 +77,21 @@ import pandas as pd
 # Next to libraries are installed with the next command in anaconda
 # conda install -c conda-forge imbalanced-learn
 from imblearn.over_sampling import RandomOverSampler
-# from imblearn.under_sampling import RandomUnderSampler
+from imblearn.under_sampling import RandomUnderSampler
 
 # autopct = "%.2f"
 
-# sampling_strategy = "not minority"
-
+sampling_strategy = "not minority"
 # fig, axs = plt.subplots(ncols=2, figsize=(10, 5))
-# rus = RandomUnderSampler(sampling_strategy=sampling_strategy)
-# X_res, y_res = rus.fit_resample(x_train, y_train)
-# y_res = pd.DataFrame(y_res)
+rus = RandomUnderSampler(sampling_strategy=sampling_strategy)
+X_res, y_res = rus.fit_resample(x_train, y_train)
+y_res = pd.DataFrame(y_res)
 # y_res.value_counts().plot.pie(autopct=autopct, ax=axs[0])
 # axs[0].set_title("Under-sampling")
 
-sampling_strategy = "not majority"
-ros = RandomOverSampler(sampling_strategy=sampling_strategy)
-X_res, y_res = ros.fit_resample(x_train, y_train)
+# sampling_strategy = "not majority"
+# ros = RandomOverSampler(sampling_strategy=sampling_strategy)
+# X_res, y_res = ros.fit_resample(x_train, y_train)
 y_res = pd.DataFrame(y_res)
 # y_res.value_counts().plot.pie(autopct=autopct, ax=axs[1])
 # axs[1].set_title("Over-sampling")
@@ -103,7 +102,7 @@ y_train = y_res.to_numpy()
 
 #%% Feature selection
 
-param_kbest = SelectKBest(f_classif, k=4600)
+param_kbest = SelectKBest(f_classif, k=2000)
 param_kbest.fit(x_train, y_train)
 x_train_kbest = param_kbest.transform(x_train)  # Then we transform both the training an the test set
 x_test_kbest = param_kbest.transform(x_val)
@@ -131,8 +130,8 @@ param_grid_knn = {'n_neighbors': [3, 7, 15, 30]}
 # Classifier
 grid_search_knn = GridSearchCV(KNeighborsClassifier(), param_grid_knn, cv=cv, refit=True)
 grid_search_knn.fit(x_train, y_train)
-params_best = grid_search_knn.best_params_
-print('Best parameters for kNN are = ', params_best)
+params_best_knn = grid_search_knn.best_params_
+print('Best parameters for kNN are = ', params_best_knn)
 
 y_pred_knn = grid_search_knn.predict(x_val)
 
@@ -157,7 +156,6 @@ from sklearn.svm import SVC
 
 parameters = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4],
                            'C': [0.01, 1, 3, 10, 100, 1000]},
-                          {'kernel': ['linear'], 'C': [0.01, 3, 10, 100, 1000]},
                           {'kernel': ['poly'], 'C': [0.01, 3, 10, 100, 1000]},
                           {'kernel': ['sigmoid'], 'C': [0.01, 3, 10, 100, 1000]}
                           ]
@@ -165,8 +163,8 @@ svc = SVC()
 clf = GridSearchCV(svc, parameters, cv=cv, refit=True)
 clf.fit(x_train, y_train)
 
-params_best = clf.best_params_
-print('Best parameters for SVC with DD for are = ', params_best)
+params_best_SVC = clf.best_params_
+print('Best parameters for SVC with DD for are = ', params_best_SVC)
 
 y_pred_svc = clf.predict(x_val)
  
@@ -187,8 +185,8 @@ param_grid_dt = {
 
 GS_dtc = GridSearchCV(estimator=dtc, param_grid=param_grid_dt, cv=cv, refit=True)
 GS_dtc.fit(x_train, y_train)
-params_best = GS_dtc.best_params_
-print('Best parameters for Random forest are = ', params_best)
+params_best_dt = GS_dtc.best_params_
+print('Best parameters for Random forest are = ', params_best_dt)
 
 y_pred = GS_dtc.predict(x_val)
 acc_DT = accuracy_score(y_val, y_pred)
@@ -208,8 +206,8 @@ param_grid_rf = {
 
 GS_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid_rf, cv=cv, refit=True)
 GS_rfc.fit(x_train, y_train)
-params_best = GS_rfc.best_params_
-print('Best parameters for Random forest are = ', params_best)
+params_best_RF = GS_rfc.best_params_
+print('Best parameters for Random forest are = ', params_best_RF)
 
 y_pred = GS_rfc.predict(x_val)
 acc_RF = accuracy_score(y_val, y_pred)
@@ -229,9 +227,32 @@ param_grid_et = {
 
 GS_etc = GridSearchCV(estimator=etc, param_grid=param_grid_et, cv=cv, refit=True)
 GS_etc.fit(x_train, y_train)
-params_best = GS_etc.best_params_
-print('Best parameters for Extra trees are = ', params_best)
+params_best_ET = GS_etc.best_params_
+print('Best parameters for Extra trees are = ', params_best_ET)
 
 y_pred = GS_etc.predict(x_val)
 acc_ET = accuracy_score(y_val, y_pred)
 print("Accuracy Extra trees is = ", acc_ET)
+
+
+#%% Gradient Boosting Classifier
+from sklearn.ensemble import GradientBoostingClassifier
+
+gbc = GradientBoostingClassifier(random_state=29)
+param_grid_gb = {
+    'criterion': ['deviance', 'exponential'],
+    'learning_rate': [0.1, 0.01, 0.001, 0.3, 0.003, 0.003],
+    'max_features': ['auto', 'sqrt', 'log2'],
+    'max_depth': [3, 8, 10, 15, 20, 35, 50],
+}
+
+GS_gbc = GridSearchCV(estimator=gbc, param_grid=param_grid_gb, cv=cv, refit=True)
+GS_gbc.fit(x_train, y_train)
+params_best_GB = GS_gbc.best_params_
+print('Best parameters for Gradient boosting are = ', params_best_GB)
+
+y_pred = GS_gbc.predict(x_val)
+acc_GB = accuracy_score(y_val, y_pred)
+print("Accuracy Gradient boosting is = ", acc_GB)
+
+
