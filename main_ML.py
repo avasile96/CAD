@@ -25,8 +25,8 @@ labels_val_path = os.path.join(csvFiles_dir, 'y_labels_val_pre.csv')
 y_train = np.loadtxt(labels_train_path, dtype=(str), delimiter=',')
 y_val = np.loadtxt(labels_val_path, dtype=(str), delimiter=',')
 
-mean_train_path = os.path.join(csvFiles_dir, 'train_mean_lbp248,lbp81.csv')
-mean_val_path = os.path.join(csvFiles_dir, 'val_mean_lbp248,lbp81.csv')
+mean_train_path = os.path.join(csvFiles_dir, 'train_mean_lbp248_lbp81.csv')
+mean_val_path = os.path.join(csvFiles_dir, 'val_mean_lbp248_lbp81.csv')
 
 mean_hue_train = np.loadtxt(mean_train_path, dtype=np.float32, delimiter=',')
 mean_hue_val = np.loadtxt(mean_val_path, dtype=np.float32, delimiter=',')
@@ -72,21 +72,21 @@ del nH_lbp_train
 del nH_lbp_val
 
 #%% Class imbalance handled
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import pandas as pd
 # Next to libraries are installed with the next command in anaconda
 # conda install -c conda-forge imbalanced-learn
 from imblearn.over_sampling import RandomOverSampler
-from imblearn.under_sampling import RandomUnderSampler
+# from imblearn.under_sampling import RandomUnderSampler
 
-autopct = "%.2f"
+# autopct = "%.2f"
 
-sampling_strategy = "not minority"
+# sampling_strategy = "not minority"
 
-fig, axs = plt.subplots(ncols=2, figsize=(10, 5))
-rus = RandomUnderSampler(sampling_strategy=sampling_strategy)
-X_res, y_res = rus.fit_resample(x_train, y_train)
-y_res = pd.DataFrame(y_res)
+# fig, axs = plt.subplots(ncols=2, figsize=(10, 5))
+# rus = RandomUnderSampler(sampling_strategy=sampling_strategy)
+# X_res, y_res = rus.fit_resample(x_train, y_train)
+# y_res = pd.DataFrame(y_res)
 # y_res.value_counts().plot.pie(autopct=autopct, ax=axs[0])
 # axs[0].set_title("Under-sampling")
 
@@ -103,7 +103,7 @@ y_train = y_res.to_numpy()
 
 #%% Feature selection
 
-param_kbest = SelectKBest(f_classif, k=1000)
+param_kbest = SelectKBest(f_classif, k=4600)
 param_kbest.fit(x_train, y_train)
 x_train_kbest = param_kbest.transform(x_train)  # Then we transform both the training an the test set
 x_test_kbest = param_kbest.transform(x_val)
@@ -137,7 +137,8 @@ print('Best parameters for kNN are = ', params_best)
 y_pred_knn = grid_search_knn.predict(x_val)
 
 # accuracy on X_test
-print("Accuracy kNN is = ", accuracy_score(y_val, y_pred_knn))
+acc_knn = accuracy_score(y_val, y_pred_knn)
+print("Accuracy kNN is = ", acc_knn)
 
 
 #%% Naive Bayes classifier
@@ -147,8 +148,8 @@ gnb = GaussianNB().fit(x_train, y_train)
 gnb_predictions = gnb.predict(x_val)
 
 # accuracy on X_test
-accuracy = gnb.score(x_val, y_val)
-print('Naive Bayes classifier: ', accuracy)
+acc_NB = gnb.score(x_val, y_val)
+print('Naive Bayes classifier: ', acc_NB)
 
 
 #%% SVC classifier
@@ -170,7 +171,8 @@ print('Best parameters for SVC with DD for are = ', params_best)
 y_pred_svc = clf.predict(x_val)
  
 # model accuracy for X_test 
-print("Accuracy SVC with DD is = ", accuracy_score(y_val, y_pred_svc))
+acc_SVC = accuracy_score(y_val, y_pred_svc)
+print("Accuracy SVC with DD is = ", acc_SVC)
 
 
 #%% Decission tree classifier
@@ -189,7 +191,8 @@ params_best = GS_dtc.best_params_
 print('Best parameters for Random forest are = ', params_best)
 
 y_pred = GS_dtc.predict(x_val)
-print("Accuracy Random forest is = ", accuracy_score(y_val, y_pred))
+acc_DT = accuracy_score(y_val, y_pred)
+print("Accuracy Random forest is = ", acc_DT)
 
 
 #%% Random Forest
@@ -209,7 +212,8 @@ params_best = GS_rfc.best_params_
 print('Best parameters for Random forest are = ', params_best)
 
 y_pred = GS_rfc.predict(x_val)
-print("Accuracy Random forest is = ", accuracy_score(y_val, y_pred))
+acc_RF = accuracy_score(y_val, y_pred)
+print("Accuracy Random forest is = ", acc_RF)
 
 
 #%% Extra trees classifier
@@ -229,4 +233,5 @@ params_best = GS_etc.best_params_
 print('Best parameters for Extra trees are = ', params_best)
 
 y_pred = GS_etc.predict(x_val)
-print("Accuracy Extra trees is = ", accuracy_score(y_val, y_pred))
+acc_ET = accuracy_score(y_val, y_pred)
+print("Accuracy Extra trees is = ", acc_ET)
