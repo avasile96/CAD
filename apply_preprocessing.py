@@ -55,13 +55,13 @@ mean_of_val_sat = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis]
 mean_of_val_val = np.zeros(x_train_arr.shape[0], dtype = np.float32)[np.newaxis].T
 
 
-for i in range(0,x_train_arr.shape[0]):
+for i in range(735,x_train_arr.shape[0]):
     x_train_arr[i] = cv2.cvtColor(x_train_arr[i],cv2.COLOR_RGB2HSV)
     x_train_arr[i] = preprocessing(x_train_arr[i])
     print(i)
     # more segemntation
     x_l_mask = np.array(x_train_arr[i,:,:,2] > 0, dtype = np.uint8)
-    x_up_mask = np.array(x_train_arr[i,:,:,2] < 200 , dtype = np.uint8)
+    x_up_mask = np.array(x_train_arr[i,:,:,2] < 0.66*x_train_arr[i,:,:,2].max() , dtype = np.uint8)
     x_mask = np.multiply(x_l_mask, x_up_mask)
     x_mask_open = area_opening(np.uint8(x_mask))
     dil_img = cv2.dilate(x_mask_open,kernel,iterations = 3)
