@@ -47,7 +47,7 @@ gc.collect()
 
 
 
-mean_of_test = np.concatenate((mean_of_train_hue, mean_of_train_sat, mean_of_train_val), axis=1)
+# mean_of_test = np.concatenate((mean_of_train_hue, mean_of_train_sat, mean_of_train_val), axis=1)
 
 
 #%% Functions
