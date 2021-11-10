@@ -210,8 +210,8 @@ for image in os.listdir(os.path.join(dataset_dir, 'noHair_test')):
 
 # JUST IN CASE
 del val_imgs_filtered
-del x_val_24_8
-del x_val_8_1
+# del x_val_24_8
+# del x_val_8_1
 
 gc.collect()
 
