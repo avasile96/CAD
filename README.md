@@ -23,3 +23,7 @@ Accuracy Gradient boosting is =  0.6216666666666667
 Best parameters for Random forest are =  {'criterion': 'entropy', 'max_depth': 50, 'max_features': 'auto', 'n_estimators': 1000}
 Accuracy Random forest is =  0.7591666666666667
 0.7591666666666667
+
+
+array([[0.44916667, 0.05083333],
+       [0.19      , 0.31      ]])

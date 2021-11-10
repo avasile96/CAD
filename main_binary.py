@@ -250,11 +250,11 @@ gc.collect()
 
 #%%
 
-# load_hsv_train = np.loadtxt('noHair_train_gb8_lbp248_lbp81.csv', dtype=np.float32, delimiter=',')
-# load_hsv_val = np.loadtxt('noHair_val_gb8_lbp248_lbp81.csv', dtype=np.float32, delimiter=',')
+load_hsv_train = np.loadtxt('noHair_train_gb8_lbp248_lbp81.csv', dtype=np.float32, delimiter=',')
+load_hsv_val = np.loadtxt('noHair_val_gb8_lbp248_lbp81.csv', dtype=np.float32, delimiter=',')
 
-# load_1st_train = np.loadtxt('train_mean_lbp248_lbp81.csv', dtype=np.float32, delimiter=',')
-# load_1st_val = np.loadtxt('val_mean_lbp248_lbp81.csv', dtype=np.float32, delimiter=',')
+load_1st_train = np.loadtxt('train_mean_lbp248_lbp81.csv', dtype=np.float32, delimiter=',')
+load_1st_val = np.loadtxt('val_mean_lbp248_lbp81.csv', dtype=np.float32, delimiter=',')
 
 
 #%% Inputs
@@ -263,10 +263,10 @@ gc.collect()
 # x_val = np.concatenate((load_1st_val, load_hsv_val, x_noHair_val_concat, 
                         # x_noHair_val_concat_og), axis=1)
 
-# x_train = np.concatenate((load_1st_train,
-#                           x_noHair_train_concat_og), axis=1)
-# x_val = np.concatenate((load_1st_val, 
-#                         x_noHair_val_concat_og), axis=1)
+x_train = np.concatenate((load_1st_train,
+                          x_noHair_train_concat_og), axis=1)
+x_val = np.concatenate((load_1st_val, 
+                        x_noHair_val_concat_og), axis=1)
 
 y_train = np.array(y_train)
 # y_val = np.array(y_val)

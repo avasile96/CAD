@@ -197,13 +197,13 @@ del train_gabor_8_1, img, train_imgs_filtered, filters, f
 
 #%% Concatenating Everything
 
-x_train = np.concatenate((np.loadtxt('mean_hsv_train.csv', dtype=np.float32, delimiter=',')[:,0][np.newaxis].T,
-                          np.loadtxt('trn_lbp_vector_8_1.csv', dtype=np.float32, delimiter=','),
-                          np.loadtxt('train_gabor_8_1.csv', dtype=np.float32, delimiter=',').reshape([4800,2048])
+x_train = np.concatenate((np.loadtxt('D:\\Uni\\Spain\\CADx\\csvfileeees\\mean_hsv_train.csv', dtype=np.float32, delimiter=',')[:,0][np.newaxis].T,
+                          np.loadtxt('D:\\Uni\\Spain\\CADx\\csvfileeees\\trn_lbp_vector_8_1.csv', dtype=np.float32, delimiter=','),
+                          np.loadtxt('D:\\Uni\\Spain\\CADx\\csvfileeees\\train_gabor_8_1.csv', dtype=np.float32, delimiter=',').reshape([4800,2048])
                           ), axis=1)
-x_val = np.concatenate((np.loadtxt('mean_hsv_val.csv', dtype=np.float32, delimiter=',')[0:1200,0][np.newaxis].T,
-                          np.loadtxt('val_lbp_vector_8_1.csv', dtype=np.float32, delimiter=','),
-                          np.loadtxt('val_gabor_8_1.csv', dtype=np.float32, delimiter=',')
+x_val = np.concatenate((np.loadtxt('D:\\Uni\\Spain\\CADx\\csvfileeees\\mean_hsv_val.csv', dtype=np.float32, delimiter=',')[0:1200,0][np.newaxis].T,
+                          np.loadtxt('D:\\Uni\\Spain\\CADx\\csvfileeees\\val_lbp_vector_8_1.csv', dtype=np.float32, delimiter=','),
+                          np.loadtxt('D:\\Uni\\Spain\\CADx\\csvfileeees\\val_gabor_8_1.csv', dtype=np.float32, delimiter=',')
                           ), axis=1)
 
 y_train = np.array(y_train)
@@ -289,12 +289,12 @@ acc_knn = accuracy_score(y_val, y_pred_knn)
 print("Accuracy kNN is = ", acc_knn)
 
 # Saving
-joblib.dump(grid_search_knn, 'grid_search_knn.sav') 
+# joblib.dump(grid_search_knn, 'grid_search_knn.sav') 
 
 # Loading
-loaded_knn = joblib.load('grid_search_knn.sav')
-result = loaded_knn.score(x_val, y_val)
-print (result)
+# loaded_knn = joblib.load('grid_search_knn.sav')
+# result = loaded_knn.score(x_val, y_val)
+# print (result)
 
 #%% Naive Bayes classifier
 from sklearn.naive_bayes import GaussianNB
@@ -306,13 +306,13 @@ gnb_predictions = gnb.predict(x_val)
 acc_NB = gnb.score(x_val, y_val)
 print('Naive Bayes classifier: ', acc_NB)
 
-# Saving
-joblib.dump(gnb, 'grid_search_NB.sav') 
+# # Saving
+# joblib.dump(gnb, 'grid_search_NB.sav') 
 
-# Loading
-loaded_NB = joblib.load('grid_search_NB.sav')
-result = loaded_NB.score(x_train, y_train)
-print (result)
+# # Loading
+# loaded_NB = joblib.load('grid_search_NB.sav')
+# result = loaded_NB.score(x_train, y_train)
+# print (result)
 
 
 #%% SVC classifier
@@ -336,13 +336,13 @@ y_pred_svc = clf.predict(x_val)
 acc_SVC = accuracy_score(y_val, y_pred_svc)
 print("Accuracy SVC with DD is = ", acc_SVC)
 
-# Saving
-joblib.dump(clf, 'grid_search_SVC.sav') 
+# # Saving
+# joblib.dump(clf, 'grid_search_SVC.sav') 
 
-# Loading
-loaded_SVC = joblib.load('grid_search_SVC.sav')
-result = loaded_SVC.score(x_val, y_val)
-print (result)
+# # Loading
+# loaded_SVC = joblib.load('grid_search_SVC.sav')
+# result = loaded_SVC.score(x_val, y_val)
+# print (result)
 
 #%% Decission tree classifier
 from sklearn.tree import DecisionTreeClassifier
@@ -363,24 +363,25 @@ y_pred = GS_dtc.predict(x_val)
 acc_DT = accuracy_score(y_val, y_pred)
 print("Accuracy Random forest is = ", acc_DT)
 
-# Saving
-joblib.dump(GS_dtc, 'DecisionTreeClassifier.sav') 
+# # Saving
+# joblib.dump(GS_dtc, 'DecisionTreeClassifier.sav') 
 
-# Loading
-loaded_GS_dtc = joblib.load('DecisionTreeClassifier.sav')
-result = loaded_GS_dtc.score(x_val, y_val)
-print (result)
+# # Loading
+# loaded_GS_dtc = joblib.load('DecisionTreeClassifier.sav')
+# result = loaded_GS_dtc.score(x_val, y_val)
+# print (result)
 
 
 #%% Random Forest
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import confusion_matrix
 
 rfc = RandomForestClassifier(random_state=42)
 param_grid_rf = {
-    'n_estimators': [30, 100, 250, 1000],
-    'max_features': ['auto', 'sqrt', 'log2'],
-    'max_depth': [2, 8, 10, 15, 20, 35, 50],
-    'criterion': ['gini', 'entropy']
+    'n_estimators': [1000],
+    'max_features': ['auto'],
+    'max_depth': [50],
+    'criterion': ['entropy']
 }
 
 GS_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid_rf, cv=cv, refit=True)
@@ -392,13 +393,15 @@ y_pred = GS_rfc.predict(x_val)
 acc_RF = accuracy_score(y_val, y_pred)
 print("Accuracy Random forest is = ", acc_RF)
 
-# Saving
-joblib.dump(GS_rfc, 'RandomForestClassifier.sav') 
+tst = confusion_matrix(y_val, y_pred)/y_val.shape[0]
 
-# Loading
-loaded_GS_rfc = joblib.load('RandomForestClassifier.sav')
-result = loaded_GS_rfc.score(x_val, y_val)
-print (result)
+# # Saving
+# joblib.dump(GS_rfc, 'RandomForestClassifier.sav') 
+
+# # Loading
+# loaded_GS_rfc = joblib.load('RandomForestClassifier.sav')
+# result = loaded_GS_rfc.score(x_val, y_val)
+# print (result)
 
 #%% Extra trees classifier
 from sklearn.ensemble import ExtraTreesClassifier
@@ -423,10 +426,10 @@ print("Accuracy Extra trees is = ", acc_ET)
 # Saving
 joblib.dump(GS_etc, 'ExtraTreesClassifier.sav') 
 
-# Loading
-loaded_GS_etc = joblib.load('ExtraTreesClassifier.sav')
-result = loaded_GS_etc.score(x_val, y_val)
-print (result)
+# # Loading
+# loaded_GS_etc = joblib.load('ExtraTreesClassifier.sav')
+# result = loaded_GS_etc.score(x_val, y_val)
+# print (result)
 
 #%% Gradient Boosting Classifier
 from sklearn.ensemble import GradientBoostingClassifier
@@ -450,12 +453,12 @@ y_pred = GS_gbc.predict(x_val)
 acc_GB = accuracy_score(y_val, y_pred)
 print("Accuracy Gradient boosting is = ", acc_GB)
 
-# Saving
-joblib.dump(GS_gbc, 'GradientBoostingClassifier.sav') 
+# # Saving
+# joblib.dump(GS_gbc, 'GradientBoostingClassifier.sav') 
 
-# Loading
-loaded_GS_gbc = joblib.load('GradientBoostingClassifier.sav')
-result = loaded_GS_gbc.score(x_val, y_val)
-print (result)
+# # Loading
+# loaded_GS_gbc = joblib.load('GradientBoostingClassifier.sav')
+# result = loaded_GS_gbc.score(x_val, y_val)
+# print (result)
 
 
