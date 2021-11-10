@@ -222,7 +222,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 
 etc = ExtraTreesClassifier(random_state=42)
 param_grid_et = {
-    'n_estimators': [30, 100, 250, 400],
+    'n_estimators': [30, 100, 250],
     'max_depth': [2, 8, 10, 15, 20, 35]
 }
 
@@ -234,6 +234,9 @@ print('Best parameters for Extra trees are = ', params_best_ET)
 y_pred = GS_etc.predict(x_val)
 acc_ET = accuracy_score(y_val, y_pred)
 print("Accuracy Extra trees is = ", acc_ET)
+
+cm = confusion_matrix(y_val, y_pred, labels=["bcc", "bkl", "mel"])
+print(confusion_matrix(y_val, y_pred, labels=["bcc", "bkl", "mel"]))
 
 
 #%% One VS Rest Classifier
