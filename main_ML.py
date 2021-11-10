@@ -11,6 +11,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.metrics import accuracy_score
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix
 import pickle
 
 # Directories
@@ -52,12 +53,12 @@ nH_lbp_val = np.loadtxt(nH_lbp_val_path, dtype=np.float32, delimiter=',')
 
 # Concatenate all the files to get x_train and x_val
 # mean_hue_train = mean_hue_train[:,0][np.newaxis].T
-# x_train = np.concatenate((mean_hue_train, nH_gb_lbp_train, gb_lbp_train), axis=1)
+x_train = np.concatenate((mean_hue_train, nH_gb_lbp_train, gb_lbp_train, nH_lbp_train), axis=1)
 # mean_hue_val = mean_hue_val[:,0][np.newaxis].T
-# x_val = np.concatenate((mean_hue_val, nH_gb_lbp_val, gb_lbp_val), axis=1)
+x_val = np.concatenate((mean_hue_val, nH_gb_lbp_val, gb_lbp_val, nH_lbp_val), axis=1)
 
-x_train = np.concatenate((mean_hue_train, nH_gb_lbp_train), axis=1)
-x_val = np.concatenate((mean_hue_val, nH_gb_lbp_val), axis=1)
+# x_train = np.concatenate((mean_hue_train, nH_gb_lbp_train), axis=1)
+# x_val = np.concatenate((mean_hue_val, nH_gb_lbp_val), axis=1)
 # save to csv file, WHEN FINAL FILE IS READY
 # np.savetxt(csvfile_train_path, x_train, delimiter=',')
 # np.savetxt(csvfile_val_path, x_val, delimiter=',')
@@ -104,7 +105,7 @@ from imblearn.under_sampling import RandomUnderSampler
 
 
 #%% Feature selection
-k = 1500
+k = 600
 print('k: ', k)
 param_kbest = SelectKBest(f_classif, k=k)
 param_kbest.fit(x_train, y_train)
