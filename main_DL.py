@@ -9,14 +9,22 @@ import tensorflow as tf
 import os
 import numpy as np
 from skimage import io
+from skimage.transform import resize
 from sklearn.neighbors import KNeighborsClassifier
 import gc
 
 from tensorflow.keras.layers import Flatten, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from pickle import dump
-from tensorflow.keras import optimizers
+from tensorflow.keras import optimizers, losses
 from tensorflow.keras.models import Model, Sequential
+
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
 
 # Directories
 source_dir = os.getcwd() # current working directory
@@ -25,20 +33,18 @@ dataset_dir = os.path.join(project_dir, 'dataset')
 
 # Generator Parameters
 img_size = (450, 600,3) # RGB imges!
-batch_size = 32
+# img_size = (225, 300,3) # RGB imges!
+batch_size = 16
 
 # Getting paths to images
 train_img_paths = []
 img_label = []
-
-x = []
-
 aux = 0
 # pseudo_x = np.zeros()
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if (aux%10==0):
+                if (aux%5==0):
                     train_img_paths.append(os.path.join(dataset_dir, 'train', case, image)) # for DL
                     # pseudo_x = io.imread(os.path.join(dataset_dir, 'train', case, image), as_gray = False)
                     # x.append(pseudo_x)
@@ -51,12 +57,12 @@ aux = 0
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if (aux%10==0):
+                if (aux%5==0):
                     val_img_paths.append(os.path.join(dataset_dir, case, image))
                     val_label.append(case)
                 aux+=1
 
-pseudo_x=None                
+     
 gc.collect()
     
 #%% Generator
@@ -81,19 +87,21 @@ class SkinImageDatabase(tf.keras.utils.Sequence):
         x = np.zeros((self.batch_size,) + self.img_size, dtype="uint8")
         for j, path in enumerate(batch_input_img_paths):
             img = io.imread(path, as_gray = False)
+            # img = resize(img, (img.shape[0] // 2, img.shape[1] // 2),
+                       # anti_aliasing=True)
             x[j] = img
 
-        y = np.array((self.batch_size,) + tuple(self.img_label), dtype="str")
+        y = np.zeros((self.batch_size,) + (1,), dtype='uint8')
         for j, path in enumerate(batch_target_img_labels):
             
-            y[j] = path
+            # y[j] = path
             if path == 'les':
                 y[j] = 1
             else:
                 y[j] = 0
         
         # y = np.where(y == 'les', 1, 0)
-                
+        
         return x, y
 
 
@@ -126,14 +134,19 @@ model.add(vgg19)
 model.add(Flatten())
 model.add(Dense(10, activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(1, activation='softmax')) #TODO
+model.add(Dense(1)) #TODO
 # Show a summary of the model. Check the number of trainable parameters
 model.summary()
 
-model.compile(loss='categorical_crossentropy',
-              optimizer=optimizers.RMSprop(lr=1e-4),
-              metrics=['acc'])
+tf.config.run_functions_eagerly(True) # result won't be affected by eager/graph mode
+# tf.data.experimental.enable_debug_mode()
 
+model.compile(loss=tf.losses.CategoricalCrossentropy(from_logits = True),
+              optimizer=optimizers.RMSprop(learning_rate=1e-3),
+              metrics=['acc'],
+              run_eagerly=True)
+
+#%%
 # Train the model
 history = model.fit(
       traingen,
@@ -141,7 +154,7 @@ history = model.fit(
       validation_data=valgen,
       verbose=1)
 
-predictions = model.predict(x)
+# predictions = model.predict(x)
 
 
 
