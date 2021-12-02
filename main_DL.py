@@ -46,12 +46,14 @@ for case in os.listdir(os.path.join(dataset_dir, 'train')):
                 aux+=1
     
 val_img_paths = []
+val_label = []
 aux = 0
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
                 if (aux%10==0):
                     val_img_paths.append(os.path.join(dataset_dir, case, image))
+                    val_label.append(case)
                 aux+=1
 
 pseudo_x=None                
@@ -89,6 +91,7 @@ class SkinImageDatabase(tf.keras.utils.Sequence):
 
 
 x = SkinImageDatabase(batch_size, img_size, train_img_paths, img_label)
+y = SkinImageDatabase(batch_size, img_size, val_img_paths, img_label)
 
 #%% Architecture
 
@@ -116,11 +119,25 @@ model.add(vgg19)
 model.add(Flatten())
 model.add(Dense(10, activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(1, activation='softmax')) #TODO
+model.add(Dense(2, activation='softmax')) #TODO
 # Show a summary of the model. Check the number of trainable parameters
 model.summary()
 
-predictions = vgg19.predict(x)
+model.compile(loss='categorical_crossentropy',
+              optimizer=optimizers.RMSprop(lr=1e-4),
+              metrics=['acc'])
+
+# Train the model
+history = model.fit(
+      x,
+      steps_per_epoch= x.samples/x.batch_size,
+      epochs=20,
+      validation_data=validation_generator, 
+      validation_steps=
+         validation_generator.samples/validation_generator.batch_size,
+      verbose=1)
+
+predictions = model.predict(x)
 
 
 
