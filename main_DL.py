@@ -116,7 +116,7 @@ model.add(vgg19)
 model.add(Flatten())
 model.add(Dense(10, activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(2, activation='softmax')) #TODO
+model.add(Dense(1, activation='softmax')) #TODO
 # Show a summary of the model. Check the number of trainable parameters
 model.summary()
 
