@@ -85,13 +85,20 @@ class SkinImageDatabase(tf.keras.utils.Sequence):
 
         y = np.array((self.batch_size,) + tuple(self.img_label), dtype="str")
         for j, path in enumerate(batch_target_img_labels):
-            y[j] = path
             
+            y[j] = path
+            if path == 'les':
+                y[j] = 1
+            else:
+                y[j] = 0
+        
+        # y = np.where(y == 'les', 1, 0)
+                
         return x, y
 
 
-x = SkinImageDatabase(batch_size, img_size, train_img_paths, img_label)
-y = SkinImageDatabase(batch_size, img_size, val_img_paths, img_label)
+traingen = SkinImageDatabase(batch_size, img_size, train_img_paths, img_label)
+valgen = SkinImageDatabase(batch_size, img_size, val_img_paths, val_label)
 
 #%% Architecture
 
@@ -119,7 +126,7 @@ model.add(vgg19)
 model.add(Flatten())
 model.add(Dense(10, activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(2, activation='softmax')) #TODO
+model.add(Dense(1, activation='softmax')) #TODO
 # Show a summary of the model. Check the number of trainable parameters
 model.summary()
 
@@ -129,12 +136,9 @@ model.compile(loss='categorical_crossentropy',
 
 # Train the model
 history = model.fit(
-      x,
-      steps_per_epoch= x.samples/x.batch_size,
+      traingen,
       epochs=20,
-      validation_data=validation_generator, 
-      validation_steps=
-         validation_generator.samples/validation_generator.batch_size,
+      validation_data=valgen,
       verbose=1)
 
 predictions = model.predict(x)
