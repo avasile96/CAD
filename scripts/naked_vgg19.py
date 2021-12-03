@@ -27,8 +27,6 @@ config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 
-https://www.tensorflow.org/tutorials/keras/keras_tuner
-
 # Directories
 source_dir = os.getcwd() # current working directory
 project_dir = os.path.dirname(source_dir) # where the dataset folder should be
