@@ -12,6 +12,7 @@ from skimage import io
 from skimage.transform import resize
 from sklearn.neighbors import KNeighborsClassifier
 import gc
+import matplotlib as plt
 
 from tensorflow.keras.layers import Flatten, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -27,7 +28,7 @@ config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
 
-https://www.tensorflow.org/tutorials/keras/keras_tuner
+# https://www.tensorflow.org/tutorials/keras/keras_tuner
 
 # Directories
 source_dir = os.getcwd() # current working directory
@@ -143,13 +144,21 @@ model.compile(loss=tf.losses.CategoricalCrossentropy(from_logits = True),
               metrics=['acc'])
 
 #%%
+checkpoint_filepath = os.path.join(source_dir, 'model.h5') # DEFINE NAME OF MODEL
+model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+    filepath=checkpoint_filepath,
+    monitor='val_acc',
+    mode='max',
+    save_best_only=True)
+
+#%%
 # Train the model
 history = model.fit(
                     x=traingen, 
                     batch_size=batch_size, 
                     epochs=10, 
                     verbose='auto',
-                    callbacks=None,
+                    callbacks=model_checkpoint_callback,
                     validation_data=valgen, 
                     shuffle=True,
                     )
@@ -159,10 +168,25 @@ predictions = model.predict(valgen.__getitem__(0)[0])
 
 
 
+#%%
+from sklearn.metrics import confusion_matrix
+n_batches = len(valgen)
 
+confusion_matrix(
+    np.concatenate([np.argmax(valgen[i][1], axis=1) for i in range(n_batches)]),    
+    np.argmax(model.predict(valgen, steps=n_batches), axis=1) 
+)
 
-
-
+#%%
+# Plot training & validation accuracy values
+plt.plot(history.history['acc'])
+plt.plot(history.history['val_acc'])
+plt.title('Model accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+# plt.savefig(os.path.join('drive/MyDrive/performance_charts/basic_' + name_arch + '_model', 'accuracy_plot.png'))
+plt.show()
 
 
 
