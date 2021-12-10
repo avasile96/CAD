@@ -18,7 +18,7 @@ from tensorflow.keras.layers import Flatten, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from pickle import dump
 from tensorflow.keras import optimizers, losses
-from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.models import Sequential
 
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
