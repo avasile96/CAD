@@ -1,0 +1,1 @@
+base_model_name,num_layers,val_acc,val_loss,tn0,fp0,fn0,tp0,recall0,precision0,specificity0,tn1,fp1,fn1,tp1,recall1,precision1,specificity1,tn2,fp2,fn2,tp2,recall2,precision2,specificity2

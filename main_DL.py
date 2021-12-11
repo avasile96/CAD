@@ -13,6 +13,7 @@ from skimage.transform import resize
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import confusion_matrix
 import gc
+import pandas as pd
 
 from tensorflow.keras.layers import Flatten, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -29,6 +30,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scikitplot.metrics import plot_confusion_matrix, plot_roc
 import datetime
+
+
+def recall_math(tp, fn):
+  return tp / (tp + fn)
+
+def precision_math(tp, fp):
+  return tp / (tp + fp)
+
+def specificity_math(tn, fp):
+  return tn / (tn + fp)
+
 
 config = ConfigProto()
 config.gpu_options.allow_growth = True
@@ -163,7 +175,7 @@ model.compile(loss=tf.losses.CategoricalCrossentropy(from_logits = True),
 
 #%% Callbacks to check learning and save the best model
 
-checkpoint_filepath = os.path.join(models_path, '{base_model_name}-{num_layers}-{epoch:02d}-{val_acc:.3f}-model.h5') # DEFINE NAME OF MODEL
+# checkpoint_filepath = os.path.join(models_path, '{base_model_name}-{num_layers}-{epoch:02d}-{val_acc:.3f}-model.h5') # DEFINE NAME OF MODEL
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
     filepath= os.path.join(models_path, base_model_name + '-num_layers_' + str(num_layers) + '-epoch_{epoch:02d}-val_acc_{val_acc:.3f}.h5'), # DEFINE NAME OF MODEL,
     monitor='val_acc',
@@ -189,14 +201,6 @@ predictions = model.predict(valgen.__getitem__(0)[0])
 
 loss, acc = model.evaluate(x=valgen) # Evaluate to get loss and accuracy of validation
 
-#%%
-
-n_batches = len(valgen)
-
-tn, fp, fn, tp = confusion_matrix(
-    np.concatenate([np.argmax(valgen[i][1], axis=1) for i in range(n_batches)]),    
-    np.argmax(model.predict(valgen, steps=n_batches), axis=1) 
-).ravel()
 
 #%%
 # Plot training & validation accuracy values
@@ -220,9 +224,34 @@ plt.savefig(os.path.join(plots_path, f'loss_plot_{base_model_name}-num_layers_{n
 plt.show()
 
 
+#%%
+
+n_batches = len(valgen)
+
+tn, fp, fn, tp = confusion_matrix(
+    np.concatenate([np.argmax(valgen[i][1], axis=1) for i in range(n_batches)]),    
+    np.argmax(model.predict(valgen, steps=n_batches), axis=1) 
+).ravel()
+
+recall = tp / (tp + fn)
+
+precision = tp / (tp + fp)
+
+specificity = tn / (tn + fp)
 
 
+#%%
 
+data = [base_model_name, num_layers, acc, loss, tn, fp, fn, tp, recall, precision, specificity]
+df = pd.DataFrame(data,columns=['base_model_name','num_layers','val_acc','val_loss','tn','fp','fn','tp','recall','precision','specificity'])
+
+df.to_csv(os.path.join(csvs_path,'binary_experiments.csv'), mode='a', index=False, header=False)
+
+hist_df = pd.DataFrame(history.history)
+
+hist_csv_file = os.path.join(csvs_path, f'history_{base_model_name}-num_layers_{num_layers}_experiment.csv')
+with open(hist_csv_file, mode='w') as f:
+    hist_df.to_csv(f)
 
 
 
