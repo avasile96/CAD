@@ -11,18 +11,24 @@ import numpy as np
 from skimage import io
 from skimage.transform import resize
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix
 import gc
-import matplotlib as plt
 
 from tensorflow.keras.layers import Flatten, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from pickle import dump
 from tensorflow.keras import optimizers, losses
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Model, Sequential
 
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 import random
+
+from keras.callbacks import Callback
+import matplotlib.pyplot as plt
+import numpy as np
+from scikitplot.metrics import plot_confusion_matrix, plot_roc
+import datetime
 
 config = ConfigProto()
 config.gpu_options.allow_growth = True
@@ -35,9 +41,15 @@ source_dir = os.getcwd() # current working directory
 project_dir = os.path.dirname(source_dir) # where the dataset folder should be
 dataset_dir = os.path.join(project_dir, 'dataset') 
 
+# Directores to save the results for binary and multiclass
+classification_type = 'binary' # 'binary' or 'multi'
+DL_folder = os.path.join(source_dir, 'DL_folders')
+csvs_path = os.path.join(DL_folder, classification_type, 'CSVs')
+models_path = os.path.join(DL_folder, classification_type, 'models')
+plots_path = os.path.join(DL_folder, classification_type, 'plots')
+
 # Generator Parameters
 img_size = (450, 600, 3) # RGB imges!
-# img_size = (225, 300,3) # RGB imges!
 batch_size = 8
 
 # Getting paths to images
@@ -89,10 +101,9 @@ class SkinImageDatabase(tf.keras.utils.Sequence):
         x = np.zeros((self.batch_size,) + self.img_size, dtype="uint8")
         y = np.zeros((self.batch_size,) + (1,), dtype='uint8')
         for j, path in enumerate(batch_input_img_paths):
-            # img = io.imread(path, as_gray = False)
+            
             img = io.imread(path, as_gray = False)
-            # img = resize(img, (img.shape[0] // 2, img.shape[1] // 2),
-                       # anti_aliasing=True)
+            
             x[j] = img
             
             if path[-10:-8] == 'ls':
@@ -107,7 +118,7 @@ valgen = SkinImageDatabase(batch_size, img_size, val_img_paths, val_label)
 
 #%% Architecture
 
-vgg19 = tf.keras.applications.VGG19(
+base_model = tf.keras.applications.VGG19(
         include_top=False,
         weights="imagenet",
         input_tensor=None,
@@ -117,16 +128,16 @@ vgg19 = tf.keras.applications.VGG19(
         )
 
 # Freeze all the layers
-for layer in vgg19.layers[:]:
+for layer in base_model.layers[:]:
     layer.trainable = False
 # Check the trainable status of the individual layers
-for layer in vgg19.layers:
+for layer in base_model.layers:
     print(layer, layer.trainable)
     
 # Create the model
 model = Sequential()
 # Add the vgg convolutional base model
-model.add(vgg19)
+model.add(base_model)
 # Add new layers
 # model.add(Dropout(0.2))
 model.add(Flatten())
@@ -136,6 +147,13 @@ model.add(Dense(2, activation='softmax'))
 # Show a summary of the model. Check the number of trainable parameters
 model.summary()
 
+# To get the number of layers the model contains and use it when the model is saved
+num_layers = 0
+for layer in model.layers:
+    num_layers+=1
+
+base_model_name = model.get_layer(index=0).name
+
 # tf.config.run_functions_eagerly(False) # result won't be affected by eager/graph mode
 # tf.data.experimental.enable_debug_mode()
 
@@ -143,22 +161,25 @@ model.compile(loss=tf.losses.CategoricalCrossentropy(from_logits = True),
               optimizer='adam',
               metrics=['acc'])
 
-#%%
-checkpoint_filepath = os.path.join(source_dir, 'model.h5') # DEFINE NAME OF MODEL
+#%% Callbacks to check learning and save the best model
+
+checkpoint_filepath = os.path.join(models_path, '{base_model_name}-{num_layers}-{epoch:02d}-{val_acc:.3f}-model.h5') # DEFINE NAME OF MODEL
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-    filepath=checkpoint_filepath,
+    filepath= os.path.join(models_path, base_model_name + '-num_layers_' + str(num_layers) + '-epoch_{epoch:02d}-val_acc_{val_acc:.3f}.h5'), # DEFINE NAME OF MODEL,
     monitor='val_acc',
     mode='max',
     save_best_only=True)
+
+callback_stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
 
 #%%
 # Train the model
 history = model.fit(
                     x=traingen, 
                     batch_size=batch_size, 
-                    epochs=10, 
+                    epochs=20, 
                     verbose='auto',
-                    callbacks=model_checkpoint_callback,
+                    callbacks=[model_checkpoint_callback, callback_stop_early],
                     validation_data=valgen, 
                     shuffle=True,
                     )
@@ -166,16 +187,16 @@ history = model.fit(
 
 predictions = model.predict(valgen.__getitem__(0)[0])
 
-
+loss, acc = model.evaluate(x=valgen) # Evaluate to get loss and accuracy of validation
 
 #%%
-from sklearn.metrics import confusion_matrix
+
 n_batches = len(valgen)
 
-confusion_matrix(
+tn, fp, fn, tp = confusion_matrix(
     np.concatenate([np.argmax(valgen[i][1], axis=1) for i in range(n_batches)]),    
     np.argmax(model.predict(valgen, steps=n_batches), axis=1) 
-)
+).ravel()
 
 #%%
 # Plot training & validation accuracy values
@@ -184,10 +205,19 @@ plt.plot(history.history['val_acc'])
 plt.title('Model accuracy')
 plt.ylabel('Accuracy')
 plt.xlabel('Epoch')
-plt.legend(['Train', 'Test'], loc='upper left')
-# plt.savefig(os.path.join('drive/MyDrive/performance_charts/basic_' + name_arch + '_model', 'accuracy_plot.png'))
+plt.legend(['Train', 'Test'], loc='best')
+plt.savefig(os.path.join(plots_path, f'acc_plot_{base_model_name}-num_layers_{num_layers}-val_acc_{acc:.3f}.png'))
 plt.show()
 
+# Loss Curves
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Loss Curves')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend(['Training loss', 'Validation Loss'], loc='best')
+plt.savefig(os.path.join(plots_path, f'loss_plot_{base_model_name}-num_layers_{num_layers}-val_acc_{acc:.3f}.png'))
+plt.show()
 
 
 
