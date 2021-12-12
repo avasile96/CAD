@@ -151,7 +151,7 @@ model = Sequential()
 # Add the vgg convolutional base model
 model.add(base_model)
 # Add new layers
-model.add(Dropout(0.5))
+# model.add(Dropout(0.5))
 model.add(Flatten())
 # model.add(Dense(10, activation='relu'))
 # model.add(Dropout(0.2))
