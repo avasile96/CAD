@@ -12,7 +12,7 @@ from skimage import io
 from skimage.transform import resize
 from sklearn.neighbors import KNeighborsClassifier
 import gc
-import matplotlib as plt
+from matplotlib import pyplot as plt
 
 from tensorflow.keras.layers import Flatten, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -184,7 +184,7 @@ plt.plot(history.history['val_acc'])
 plt.title('Model accuracy')
 plt.ylabel('Accuracy')
 plt.xlabel('Epoch')
-plt.legend(['Train', 'Test'], loc='upper left')
+plt.legend(['Train', 'Validation'], loc='upper left')
 # plt.savefig(os.path.join('drive/MyDrive/performance_charts/basic_' + name_arch + '_model', 'accuracy_plot.png'))
 plt.show()
 
