@@ -1,8 +1,9 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Oct 26 15:24:50 2021
+Created on Sun Dec 12 03:48:16 2021
 
-@author: vasil
+@author: manuel
 """
 
 import tensorflow as tf
@@ -11,13 +12,9 @@ import numpy as np
 from skimage import io
 from skimage.transform import resize
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import confusion_matrix
-import gc
-<<<<<<< HEAD
-from matplotlib import pyplot as plt
-=======
+from sklearn.metrics import classification_report, confusion_matrix
 import pandas as pd
->>>>>>> 08aec0ef61058a8f9bded6cc27874e1c341265e2
+import gc
 
 from tensorflow.keras.layers import Flatten, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -33,17 +30,7 @@ from keras.callbacks import Callback
 import matplotlib.pyplot as plt
 import numpy as np
 from scikitplot.metrics import plot_confusion_matrix, plot_roc
-import datetime
 
-
-def recall_math(tp, fn):
-  return tp / (tp + fn)
-
-def precision_math(tp, fp):
-  return tp / (tp + fp)
-
-def specificity_math(tn, fp):
-  return tn / (tn + fp)
 
 
 config = ConfigProto()
@@ -58,7 +45,7 @@ project_dir = os.path.dirname(source_dir) # where the dataset folder should be
 dataset_dir = os.path.join(project_dir, 'dataset') 
 
 # Directores to save the results for binary and multiclass
-classification_type = 'binary' # 'binary' or 'multi'
+classification_type = 'multi' # 'binary' or 'multi'
 DL_folder = os.path.join(source_dir, 'DL_folders')
 csvs_path = os.path.join(DL_folder, classification_type, 'CSVs')
 models_path = os.path.join(DL_folder, classification_type, 'models')
@@ -67,8 +54,9 @@ plots_path = os.path.join(DL_folder, classification_type, 'plots')
 # Generator Parameters
 img_size = (450, 600, 3) # RGB imges!
 batch_size = 8
+classes_num = 3
 
-# Getting paths to images
+
 train_img_paths = []
 img_label = []
 aux = 0
@@ -76,10 +64,10 @@ aux = 0
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if (aux%10==0):
-                    train_img_paths.append(os.path.join(dataset_dir, 'train', case, image)) # for DL
-                    img_label.append(case)
-                aux+=1
+                #if (aux%10==0):
+                train_img_paths.append(os.path.join(dataset_dir, 'train', case, image)) # for DL
+                img_label.append(case)
+                #aux+=1
     
 val_img_paths = []
 val_label = []
@@ -87,13 +75,14 @@ aux = 0
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if (aux%10==0):
-                    val_img_paths.append(os.path.join(dataset_dir, 'val', case, image)) # for DL
-                    val_label.append(case)
-                aux+=1
-
-     
+                #if (aux%10==0):
+                val_img_paths.append(os.path.join(dataset_dir, 'val', case, image)) # for DL
+                val_label.append(case)
+                #aux+=1
+                
 gc.collect()
+
+
     
 #%% Generator
 class SkinImageDatabase(tf.keras.utils.Sequence):
@@ -117,30 +106,34 @@ class SkinImageDatabase(tf.keras.utils.Sequence):
         x = np.zeros((self.batch_size,) + self.img_size, dtype="uint8")
         y = np.zeros((self.batch_size,) + (1,), dtype='uint8')
         for j, path in enumerate(batch_input_img_paths):
-            
+            # img = io.imread(path, as_gray = False)
             img = io.imread(path, as_gray = False)
-            
+            # img = resize(img, (img.shape[0] // 2, img.shape[1] // 2),
+                       # anti_aliasing=True)
             x[j] = img
             
-            if path[-10:-8] == 'ls':
-                y[j] = 1
+            if path[-11:-8] == 'bcc':
+              y[j] = 0
+            elif path[-11:-8] == 'bkl':
+              y[j] = 1
             else:
-                y[j] = 0
+              y[j] = 2               
+
                 
-        return x, tf.keras.utils.to_categorical(y, num_classes=2)
+        return x, tf.keras.utils.to_categorical(y, num_classes=classes_num)
 
 traingen = SkinImageDatabase(batch_size, img_size, train_img_paths, img_label)
 valgen = SkinImageDatabase(batch_size, img_size, val_img_paths, val_label)
 
+
 #%% Architecture
-# ONLY PART TO MODIFY IS THE NETWORK TO USE AND THE LAYERS!!!!!!
+
 base_model = tf.keras.applications.VGG16(
         include_top=False,
         weights="imagenet",
         input_tensor=None,
         input_shape=img_size,
-        pooling=None,
-        classifier_activation="softmax",
+        pooling=None
         )
 
 # Freeze all the layers
@@ -155,11 +148,11 @@ model = Sequential()
 # Add the vgg convolutional base model
 model.add(base_model)
 # Add new layers
-model.add(Dropout(0.5))
+model.add(Dropout(0.2))
 model.add(Flatten())
 # model.add(Dense(10, activation='relu'))
 # model.add(Dropout(0.2))
-model.add(Dense(2, activation='softmax'))
+model.add(Dense(classes_num, activation='softmax'))
 # Show a summary of the model. Check the number of trainable parameters
 model.summary()
 
@@ -177,11 +170,12 @@ model.compile(loss=tf.losses.CategoricalCrossentropy(from_logits = True),
               optimizer='adam',
               metrics=['acc'])
 
-#%% Callbacks to check learning and save the best model
+class_weight = {0: 2., 1: 1., 2: 1.}
 
-# checkpoint_filepath = os.path.join(models_path, '{base_model_name}-{num_layers}-{epoch:02d}-{val_acc:.3f}-model.h5') # DEFINE NAME OF MODEL
+#%%
+# checkpoint_filepath = 'drive/MyDrive/saved_models/' + name_arch + '_model.h5'
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-    filepath= os.path.join(models_path, base_model_name + '-num_layers_' + str(num_layers) + '-epoch_{epoch:02d}-val_acc_{val_acc:.3f}.h5'), # DEFINE NAME OF MODEL,
+    filepath= os.path.join(models_path, base_model_name + '-num_layers_' + str(num_layers) + '-epoch_{epoch:02d}-val_acc_{val_acc:.3f}.h5'),
     monitor='val_acc',
     mode='max',
     save_best_only=True)
@@ -198,13 +192,11 @@ history = model.fit(
                     callbacks=[model_checkpoint_callback, callback_stop_early],
                     validation_data=valgen, 
                     shuffle=True,
+                    class_weight=class_weight
                     )
 
 
-predictions = model.predict(valgen.__getitem__(0)[0])
-
 loss, acc = model.evaluate(x=valgen) # Evaluate to get loss and accuracy of validation
-
 
 #%%
 # Plot training & validation accuracy values
@@ -213,11 +205,7 @@ plt.plot(history.history['val_acc'])
 plt.title('Model accuracy')
 plt.ylabel('Accuracy')
 plt.xlabel('Epoch')
-<<<<<<< HEAD
-plt.legend(['Train', 'Validation'], loc='upper left')
-# plt.savefig(os.path.join('drive/MyDrive/performance_charts/basic_' + name_arch + '_model', 'accuracy_plot.png'))
-=======
-plt.legend(['Train', 'Test'], loc='best')
+plt.legend(['Train', 'Test'], loc='upper left')
 plt.savefig(os.path.join(plots_path, f'acc_plot_{base_model_name}-num_layers_{num_layers}-val_acc_{acc:.3f}.png'))
 plt.show()
 
@@ -229,45 +217,62 @@ plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend(['Training loss', 'Validation Loss'], loc='best')
 plt.savefig(os.path.join(plots_path, f'loss_plot_{base_model_name}-num_layers_{num_layers}-val_acc_{acc:.3f}.png'))
->>>>>>> 08aec0ef61058a8f9bded6cc27874e1c341265e2
 plt.show()
 
-
-#%%
-
+#%% Confusion matrix
 n_batches = len(valgen)
 
-tn, fp, fn, tp = confusion_matrix(
+cm = confusion_matrix(
     np.concatenate([np.argmax(valgen[i][1], axis=1) for i in range(n_batches)]),    
     np.argmax(model.predict(valgen, steps=n_batches), axis=1) 
-).ravel()
+)
 
-recall = tp / (tp + fn)
+#%% Math of all the metrics remaining
 
-precision = tp / (tp + fp)
+precisions = []
+recalls = []
+specificities = []
+tps = []
+fps = []
+fns = []
+tns = []
 
-specificity = tn / (tn + fp)
+for x in range(0,3):
+    tp = cm[x,x]
+    fp = np.sum(cm[:,x]) - cm[x,x]
+    fn = np.sum(cm[x,:]) - cm[x,x]
+    tn = np.sum(cm) - (tp + fp + fn)
+
+    recall = tp / (tp + fn)
+    precision = tp / (tp + fp)
+    specificity = tn / (tn + fp)
+
+    tps.append(tp)
+    fps.append(fp)
+    fns.append(fn)
+    tns.append(tn)
+    precisions.append(precision)
+    recalls.append(recall)
+    specificities.append(specificity)
 
 
-#%%
+#%% To save all the data as CVS
 
-data = [base_model_name, num_layers, acc, loss, tn, fp, fn, tp, recall, precision, specificity]
-df = pd.DataFrame(data,columns=['base_model_name','num_layers','val_acc','val_loss','tn','fp','fn','tp','recall','precision','specificity'])
+data = [base_model_name, num_layers, acc, loss, tns[0], fps[0], fns[0], tps[0], recalls[0], precisions[0], specificities[0],
+        tns[1], fps[1], fns[1], tps[1], recalls[1], precisions[1], specificities[1],
+        tns[2], fps[2], fns[2], tps[2], recalls[2], precisions[2], specificities[2],]
 
-df.to_csv(os.path.join(csvs_path,'binary_experiments.csv'), mode='a', index=False, header=False)
+df = pd.DataFrame([data], columns=['base_model_name','num_layers','val_acc','val_loss',
+                                'tn0','fp0','fn0','tp0','recall0','precision0','specificity0',
+                                'tn1','fp1','fn1','tp1','recall1','precision1','specificity1',
+                                'tn2','fp2','fn2','tp2','recall2','precision2','specificity2'])
+
+df.to_csv(os.path.join(csvs_path,'multi_experiments.csv'), mode='a', index=False, header=False)
 
 hist_df = pd.DataFrame(history.history)
-
 hist_csv_file = os.path.join(csvs_path, f'history_{base_model_name}-num_layers_{num_layers}_experiment.csv')
 with open(hist_csv_file, mode='w') as f:
     hist_df.to_csv(f)
-
-
-
-
-
-
-
 
 
 
