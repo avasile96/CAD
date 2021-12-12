@@ -247,7 +247,8 @@ specificity = tn / (tn + fp)
 #%%
 
 data = [base_model_name, num_layers, acc, loss, tn, fp, fn, tp, recall, precision, specificity]
-df = pd.DataFrame(data,columns=['base_model_name','num_layers','val_acc','val_loss','tn','fp','fn','tp','recall','precision','specificity'])
+df = pd.DataFrame([data],columns=['base_model_name','num_layers','val_acc',
+                                  'val_loss','tn','fp','fn','tp','recall','precision','specificity'])
 
 df.to_csv(os.path.join(csvs_path,'binary_experiments.csv'), mode='a', index=False, header=False)
 

@@ -1,1 +1,2 @@
 base_model_name,num_layers,val_acc,val_loss,tn,fp,fn,tp,recall,precision,specificity
+vgg16,3,0.7333333492279053,14.196637153625488,33,27,5,55,0.9166666666666666,0.6707317073170732,0.55
