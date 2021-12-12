@@ -129,8 +129,8 @@ traingen = SkinImageDatabase(batch_size, img_size, train_img_paths, img_label)
 valgen = SkinImageDatabase(batch_size, img_size, val_img_paths, val_label)
 
 #%% Architecture
-
-base_model = tf.keras.applications.VGG19(
+# ONLY PART TO MODIFY IS THE NETWORK TO USE AND THE LAYERS!!!!!!
+base_model = tf.keras.applications.VGG16(
         include_top=False,
         weights="imagenet",
         input_tensor=None,
@@ -151,7 +151,7 @@ model = Sequential()
 # Add the vgg convolutional base model
 model.add(base_model)
 # Add new layers
-# model.add(Dropout(0.2))
+model.add(Dropout(0.5))
 model.add(Flatten())
 # model.add(Dense(10, activation='relu'))
 # model.add(Dropout(0.2))
