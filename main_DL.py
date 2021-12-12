@@ -254,7 +254,7 @@ df.to_csv(os.path.join(csvs_path,'binary_experiments.csv'), mode='a', index=Fals
 
 hist_df = pd.DataFrame(history.history)
 
-hist_csv_file = os.path.join(csvs_path, f'history_{base_model_name}-num_layers_{num_layers}_experiment.csv')
+hist_csv_file = os.path.join(csvs_path, f'history_{base_model_name}-num_layers_{num_layers}-val_acc_{acc}-val_loss_{loss}-experiment.csv')
 with open(hist_csv_file, mode='w') as f:
     hist_df.to_csv(f)
 

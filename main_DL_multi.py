@@ -15,6 +15,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 import pandas as pd
 import gc
+from matplotlib import pyplot as plt
 
 from tensorflow.keras.layers import Flatten, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -27,7 +28,6 @@ from tensorflow.compat.v1 import InteractiveSession
 import random
 
 from keras.callbacks import Callback
-import matplotlib.pyplot as plt
 import numpy as np
 from scikitplot.metrics import plot_confusion_matrix, plot_roc
 
@@ -42,7 +42,7 @@ session = InteractiveSession(config=config)
 # Directories
 source_dir = os.getcwd() # current working directory
 project_dir = os.path.dirname(source_dir) # where the dataset folder should be
-dataset_dir = os.path.join(project_dir, 'dataset') 
+dataset_dir = os.path.join(project_dir, 'dataset_mc') 
 
 # Directores to save the results for binary and multiclass
 classification_type = 'multi' # 'binary' or 'multi'
@@ -148,7 +148,7 @@ model = Sequential()
 # Add the vgg convolutional base model
 model.add(base_model)
 # Add new layers
-model.add(Dropout(0.2))
+# model.add(Dropout(0.2))
 model.add(Flatten())
 # model.add(Dense(10, activation='relu'))
 # model.add(Dropout(0.2))
@@ -200,6 +200,7 @@ loss, acc = model.evaluate(x=valgen) # Evaluate to get loss and accuracy of vali
 
 #%%
 # Plot training & validation accuracy values
+plt.figure()
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
 plt.title('Model accuracy')
@@ -210,6 +211,7 @@ plt.savefig(os.path.join(plots_path, f'acc_plot_{base_model_name}-num_layers_{nu
 plt.show()
 
 # Loss Curves
+plt.figure()
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
 plt.title('Loss Curves')
