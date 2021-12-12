@@ -13,11 +13,8 @@ from skimage.transform import resize
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import confusion_matrix
 import gc
-<<<<<<< HEAD
 from matplotlib import pyplot as plt
-=======
 import pandas as pd
->>>>>>> 08aec0ef61058a8f9bded6cc27874e1c341265e2
 
 from tensorflow.keras.layers import Flatten, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -30,7 +27,6 @@ from tensorflow.compat.v1 import InteractiveSession
 import random
 
 from keras.callbacks import Callback
-import matplotlib.pyplot as plt
 import numpy as np
 from scikitplot.metrics import plot_confusion_matrix, plot_roc
 import datetime
@@ -213,10 +209,8 @@ plt.plot(history.history['val_acc'])
 plt.title('Model accuracy')
 plt.ylabel('Accuracy')
 plt.xlabel('Epoch')
-<<<<<<< HEAD
 plt.legend(['Train', 'Validation'], loc='upper left')
 # plt.savefig(os.path.join('drive/MyDrive/performance_charts/basic_' + name_arch + '_model', 'accuracy_plot.png'))
-=======
 plt.legend(['Train', 'Test'], loc='best')
 plt.savefig(os.path.join(plots_path, f'acc_plot_{base_model_name}-num_layers_{num_layers}-val_acc_{acc:.3f}.png'))
 plt.show()
@@ -229,7 +223,6 @@ plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend(['Training loss', 'Validation Loss'], loc='best')
 plt.savefig(os.path.join(plots_path, f'loss_plot_{base_model_name}-num_layers_{num_layers}-val_acc_{acc:.3f}.png'))
->>>>>>> 08aec0ef61058a8f9bded6cc27874e1c341265e2
 plt.show()
 
 
