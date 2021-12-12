@@ -28,7 +28,6 @@ import random
 
 from keras.callbacks import Callback
 import matplotlib.pyplot as plt
-import numpy as np
 from scikitplot.metrics import plot_confusion_matrix, plot_roc
 
 
@@ -270,7 +269,7 @@ df = pd.DataFrame([data], columns=['base_model_name','num_layers','val_acc','val
 df.to_csv(os.path.join(csvs_path,'multi_experiments.csv'), mode='a', index=False, header=False)
 
 hist_df = pd.DataFrame(history.history)
-hist_csv_file = os.path.join(csvs_path, f'history_{base_model_name}-num_layers_{num_layers}_experiment.csv')
+hist_csv_file = os.path.join(csvs_path, f'history_{base_model_name}-num_layers_{num_layers}-val_acc_{acc}-val_loss_{loss}-experiment.csv')
 with open(hist_csv_file, mode='w') as f:
     hist_df.to_csv(f)
 
