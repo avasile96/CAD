@@ -204,6 +204,7 @@ loss, acc = model.evaluate(x=valgen) # Evaluate to get loss and accuracy of vali
 
 #%%
 # Plot training & validation accuracy values
+plt.figure()
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
 plt.title('Model accuracy')
@@ -216,13 +217,14 @@ plt.savefig(os.path.join(plots_path, f'acc_plot_{base_model_name}-num_layers_{nu
 plt.show()
 
 # Loss Curves
+plt.figure()
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
 plt.title('Loss Curves')
 plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend(['Training loss', 'Validation Loss'], loc='best')
-plt.savefig(os.path.join(plots_path, f'loss_plot_{base_model_name}-num_layers_{num_layers}-val_acc_{acc:.3f}.png'))
+# plt.savefig(os.path.join(plots_path, f'loss_plot_{base_model_name}-num_layers_{num_layers}-val_acc_{acc:.3f}.png'))
 plt.show()
 
 
