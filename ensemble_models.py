@@ -121,8 +121,11 @@ valgen = SkinImageDatabase(batch_size, img_size, val_img_paths, val_label)
 
 #%%
 model0 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\basic_DenseNet121_model_val_acc_81.h5') 
-model1 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\dropout_5_VGG16_model_val_acc_84.h5') 
-models = [model0, model1]
+model1 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\dropout_5_VGG16_model_val_acc_84.h5')
+model2 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\dropout_5_DenseNet121_model_val_acc_818.h5') 
+model3 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\basic_VGG16_model_val_acc_82.h5') 
+model4 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\dropout_5_VGG16_model_val_acc_83.h5') 
+models = [model0, model1, model2, model3, model4]
 
 #%% Prediction
 # make predictions
