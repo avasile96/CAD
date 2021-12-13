@@ -151,9 +151,9 @@ model = Sequential()
 # Add the vgg convolutional base model
 model.add(base_model)
 # Add new layers
-# model.add(Dropout(0.5))
+model.add(Dropout(0.5))
 model.add(Flatten())
-# model.add(Dense(10, activation='relu'))
+model.add(Dense(10, activation='relu'))
 # model.add(Dropout(0.2))
 model.add(Dense(2, activation='softmax'))
 # Show a summary of the model. Check the number of trainable parameters
@@ -214,7 +214,7 @@ plt.legend(['Train', 'Validation'], loc='upper left')
 # plt.savefig(os.path.join('drive/MyDrive/performance_charts/basic_' + name_arch + '_model', 'accuracy_plot.png'))
 plt.legend(['Train', 'Test'], loc='best')
 plt.savefig(os.path.join(plots_path, f'acc_plot_{base_model_name}-num_layers_{num_layers}-val_acc_{acc:.3f}.png'))
-plt.show()
+#plt.show()
 
 # Loss Curves
 plt.figure()
@@ -225,7 +225,7 @@ plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend(['Training loss', 'Validation Loss'], loc='best')
 # plt.savefig(os.path.join(plots_path, f'loss_plot_{base_model_name}-num_layers_{num_layers}-val_acc_{acc:.3f}.png'))
-plt.show()
+#plt.show()
 
 
 #%%
