@@ -121,11 +121,21 @@ valgen = SkinImageDatabase(batch_size, img_size, val_img_paths, val_label)
 
 #%% Acquicision of models with accuracy greater than 0.80
 
-models = []
+if classification_type == 'binary':
+    
+    models = []
+    for model in os.listdir(models_path):
+        if int(model[-6:-3]) >= 850:
+            models.append(tf.keras.models.load_model(os.path.join(models_path, model)))
 
-for model in os.listdir(models_path):
-    if int(model[-6:-3]) >= 800:
-        models.append(tf.keras.models.load_model(os.path.join(models_path, model)))
+
+if classification_type == 'multi':
+    
+    models = []
+    for model in os.listdir(models_path):
+        if int(model[-6:-3]) >= 700:
+            models.append(tf.keras.models.load_model(os.path.join(models_path, model)))
+
 
 # model0 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\basic_DenseNet121_model_val_acc_81.h5') 
 # model1 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\dropout_5_VGG16_model_val_acc_84.h5')
@@ -167,7 +177,7 @@ if classification_type == 'binary':
     df = pd.DataFrame([data],columns=['base_model_name','num_layers','val_acc',
                                       'val_loss','tn','fp','fn','tp','recall','precision','specificity'])
     
-    # df.to_csv(os.path.join(csvs_path,'binary_experiments.csv'), mode='a', index=False, header=False)
+    df.to_csv(os.path.join(csvs_path,'binary_experiments.csv'), mode='a', index=False, header=False)
 
     
 if classification_type == 'multi':
@@ -209,7 +219,7 @@ if classification_type == 'multi':
                                     'tn1','fp1','fn1','tp1','recall1','precision1','specificity1',
                                     'tn2','fp2','fn2','tp2','recall2','precision2','specificity2'])
     
-    # df.to_csv(os.path.join(csvs_path,'multi_experiments.csv'), mode='a', index=False, header=False)
+    df.to_csv(os.path.join(csvs_path,'multi_experiments.csv'), mode='a', index=False, header=False)
 
 
 

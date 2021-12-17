@@ -16,7 +16,8 @@ import gc
 from matplotlib import pyplot as plt
 import pandas as pd
 
-from tensorflow.keras.layers import Flatten, Dense, Dropout
+from tensorflow.keras.layers import Flatten, Dense, Dropout, Conv2D, MaxPooling2D, Activation
+from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from pickle import dump
 from tensorflow.keras import optimizers, losses
@@ -72,10 +73,10 @@ aux = 0
 for case in os.listdir(os.path.join(dataset_dir, 'train')):
     for image in os.listdir(os.path.join(dataset_dir, 'train', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if (aux%10==0):
+                # if (aux%10==0):
                     train_img_paths.append(os.path.join(dataset_dir, 'train', case, image)) # for DL
                     img_label.append(case)
-                aux+=1
+                # aux+=1
     
 val_img_paths = []
 val_label = []
@@ -83,10 +84,10 @@ aux = 0
 for case in os.listdir(os.path.join(dataset_dir, 'val')):
     for image in os.listdir(os.path.join(dataset_dir, 'val', case)):
             if image.endswith(".jpg") and not image.startswith("."):
-                if (aux%10==0):
+                # if (aux%10==0):
                     val_img_paths.append(os.path.join(dataset_dir, 'val', case, image)) # for DL
                     val_label.append(case)
-                aux+=1
+                # aux+=1
 
      
 gc.collect()
@@ -130,7 +131,7 @@ valgen = SkinImageDatabase(batch_size, img_size, val_img_paths, val_label)
 
 #%% Architecture
 # ONLY PART TO MODIFY IS THE NETWORK TO USE AND THE LAYERS!!!!!!
-base_model = tf.keras.applications.VGG16(
+base_model = tf.keras.applications.ResNet50(
         include_top=False,
         weights="imagenet",
         input_tensor=None,
@@ -169,7 +170,7 @@ base_model_name = model.get_layer(index=0).name
 # tf.config.run_functions_eagerly(False) # result won't be affected by eager/graph mode
 # tf.data.experimental.enable_debug_mode()
 
-model.compile(loss=tf.losses.CategoricalCrossentropy(from_logits = True),
+model.compile(loss=tf.losses.CategoricalCrossentropy(from_logits=True),
               optimizer='adam',
               metrics=['acc'])
 
