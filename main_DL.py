@@ -244,7 +244,7 @@ precision = tp / (tp + fp)
 specificity = tn / (tn + fp)
 
 
-#%%
+#%% Save information in CSV files
 
 data = [base_model_name, num_layers, acc, loss, tn, fp, fn, tp, recall, precision, specificity]
 df = pd.DataFrame([data],columns=['base_model_name','num_layers','val_acc',

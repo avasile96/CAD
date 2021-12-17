@@ -11,7 +11,7 @@ import numpy as np
 from skimage import io
 from skimage.transform import resize
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import pandas as pd
 import gc
 
@@ -119,13 +119,20 @@ class SkinImageDatabase(tf.keras.utils.Sequence):
 traingen = SkinImageDatabase(batch_size, img_size, train_img_paths, img_label)
 valgen = SkinImageDatabase(batch_size, img_size, val_img_paths, val_label)
 
-#%%
-model0 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\basic_DenseNet121_model_val_acc_81.h5') 
-model1 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\dropout_5_VGG16_model_val_acc_84.h5')
-model2 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\dropout_5_DenseNet121_model_val_acc_818.h5') 
-model3 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\basic_VGG16_model_val_acc_82.h5') 
-model4 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\dropout_5_VGG16_model_val_acc_83.h5') 
-models = [model0, model1, model2, model3, model4]
+#%% Acquicision of models with accuracy greater than 0.80
+
+models = []
+
+for model in os.listdir(models_path):
+    if int(model[-6:-3]) >= 800:
+        models.append(tf.keras.models.load_model(os.path.join(models_path, model)))
+
+# model0 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\basic_DenseNet121_model_val_acc_81.h5') 
+# model1 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\dropout_5_VGG16_model_val_acc_84.h5')
+# model2 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\dropout_5_DenseNet121_model_val_acc_818.h5') 
+# model3 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\basic_VGG16_model_val_acc_82.h5') 
+# model4 = tf.keras.models.load_model('C:\\Users\\52331\\Downloads\\dropout_5_VGG16_model_val_acc_83.h5') 
+# models = [model0, model1, model2, model3, model4]
 
 #%% Prediction
 # make predictions
@@ -137,10 +144,73 @@ summed = np.sum(yhats, axis=0)
 # argmax across classes
 outcomes = np.argmax(summed, axis=1)
 
-#%%
+
+#%% Accuracy
+
 n_batches = len(valgen)
 
 true_labels = np.concatenate([np.argmax(valgen[i][1], axis=1) for i in range(n_batches)])
+acc = accuracy_score(true_labels, outcomes)
 
-print(accuracy_score(true_labels, outcomes))
+
+#%% Confusion matrix and metrics depending on the classification (binary or multiclass)
+
+if classification_type == 'binary':
+    
+    tn, fp, fn, tp = confusion_matrix(true_labels, outcomes).ravel()
+
+    recall = tp / (tp + fn)
+    precision = tp / (tp + fp)
+    specificity = tn / (tn + fp)
+
+    data = ['ensemble_models', len(models), acc, '-', tn, fp, fn, tp, recall, precision, specificity]
+    df = pd.DataFrame([data],columns=['base_model_name','num_layers','val_acc',
+                                      'val_loss','tn','fp','fn','tp','recall','precision','specificity'])
+    
+    # df.to_csv(os.path.join(csvs_path,'binary_experiments.csv'), mode='a', index=False, header=False)
+
+    
+if classification_type == 'multi':
+    
+    cm = confusion_matrix(true_labels, outcomes)
+
+    precisions = []
+    recalls = []
+    specificities = []
+    tps = []
+    fps = []
+    fns = []
+    tns = []
+    
+    for x in range(0,3):
+        tp = cm[x,x]
+        fp = np.sum(cm[:,x]) - cm[x,x]
+        fn = np.sum(cm[x,:]) - cm[x,x]
+        tn = np.sum(cm) - (tp + fp + fn)
+    
+        recall = tp / (tp + fn)
+        precision = tp / (tp + fp)
+        specificity = tn / (tn + fp)
+    
+        tps.append(tp)
+        fps.append(fp)
+        fns.append(fn)
+        tns.append(tn)
+        precisions.append(precision)
+        recalls.append(recall)
+        specificities.append(specificity)                                                       
+    
+    data = ['ensemble_models', len(models), acc, '-', tns[0], fps[0], fns[0], tps[0], recalls[0], precisions[0], specificities[0],
+            tns[1], fps[1], fns[1], tps[1], recalls[1], precisions[1], specificities[1],
+            tns[2], fps[2], fns[2], tps[2], recalls[2], precisions[2], specificities[2],]
+    
+    df = pd.DataFrame([data], columns=['base_model_name','num_layers','val_acc','val_loss',
+                                    'tn0','fp0','fn0','tp0','recall0','precision0','specificity0',
+                                    'tn1','fp1','fn1','tp1','recall1','precision1','specificity1',
+                                    'tn2','fp2','fn2','tp2','recall2','precision2','specificity2'])
+    
+    # df.to_csv(os.path.join(csvs_path,'multi_experiments.csv'), mode='a', index=False, header=False)
+
+
+
 
