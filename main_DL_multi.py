@@ -42,7 +42,7 @@ session = InteractiveSession(config=config)
 # Directories
 source_dir = os.getcwd() # current working directory
 project_dir = os.path.dirname(source_dir) # where the dataset folder should be
-dataset_dir = os.path.join(project_dir, 'dataset_mc') 
+dataset_dir = os.path.join(project_dir, 'dataset2') 
 
 # Directores to save the results for binary and multiclass
 classification_type = 'multi' # 'binary' or 'multi'
@@ -128,7 +128,7 @@ valgen = SkinImageDatabase(batch_size, img_size, val_img_paths, val_label)
 
 #%% Architecture
 
-base_model = tf.keras.applications.VGG16(
+base_model = tf.keras.applications.ResNet50(
         include_top=False,
         weights="imagenet",
         input_tensor=None,
@@ -148,9 +148,9 @@ model = Sequential()
 # Add the vgg convolutional base model
 model.add(base_model)
 # Add new layers
-# model.add(Dropout(0.2))
+model.add(Dropout(0.5))
 model.add(Flatten())
-# model.add(Dense(10, activation='relu'))
+model.add(Dense(10, activation='relu'))
 # model.add(Dropout(0.2))
 model.add(Dense(classes_num, activation='softmax'))
 # Show a summary of the model. Check the number of trainable parameters

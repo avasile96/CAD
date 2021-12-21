@@ -125,7 +125,7 @@ if classification_type == 'binary':
     
     models = []
     for model in os.listdir(models_path):
-        if int(model[-6:-3]) >= 850:
+        if int(model[-6:-3]) >= 845: # Resnet50 acc:853, Resnet50 acc=873, vgg16 acc=846
             models.append(tf.keras.models.load_model(os.path.join(models_path, model)))
 
 
