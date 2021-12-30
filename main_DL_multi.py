@@ -15,27 +15,29 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 import pandas as pd
 import gc
+import cv2
 from matplotlib import pyplot as plt
 
 from tensorflow.keras.layers import Flatten, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from pickle import dump
-from tensorflow.keras import optimizers, losses
+from tensorflow.keras import layers, optimizers, losses
 from tensorflow.keras.models import Model, Sequential
 
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 import random
 
-from keras.callbacks import Callback
+from keras.callbacks import Callback, LearningRateScheduler
 import numpy as np
 from scikitplot.metrics import plot_confusion_matrix, plot_roc
-
 
 
 config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
+
+tf.keras.backend.clear_session()
 
 # https://www.tensorflow.org/tutorials/keras/keras_tuner
 
@@ -82,6 +84,27 @@ for case in os.listdir(os.path.join(dataset_dir, 'val')):
                 
 gc.collect()
 
+#%% Functions
+
+def hairRemoval(img, strength=1):
+    thresh, otsu = cv2.threshold(np.uint8(img), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    filter =(3, 3)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, filter)
+    
+    black_hat = cv2.morphologyEx(otsu, cv2.MORPH_BLACKHAT,kernel)
+    inpaint_img = cv2.inpaint(img, black_hat, 7, flags=cv2.INPAINT_TELEA)
+    if strength:
+        for i in range(1,strength):
+            black_hat = cv2.morphologyEx(otsu, cv2.MORPH_BLACKHAT,kernel)
+            inpaint_img = cv2.inpaint(img, black_hat, 7, flags=cv2.INPAINT_TELEA)
+        
+    return inpaint_img
+
+
+def normalize_image(image, mean, std):
+    for channel in range(3):
+        image[:,:,channel] = (image[:,:,channel] - mean[channel]) / std[channel]
+    return image
 
     
 #%% Generator
@@ -106,10 +129,19 @@ class SkinImageDatabase(tf.keras.utils.Sequence):
         x = np.zeros((self.batch_size,) + self.img_size, dtype="uint8")
         y = np.zeros((self.batch_size,) + (1,), dtype='uint8')
         for j, path in enumerate(batch_input_img_paths):
-            # img = io.imread(path, as_gray = False)
             img = io.imread(path, as_gray = False)
-            # img = resize(img, (img.shape[0] // 2, img.shape[1] // 2),
-                       # anti_aliasing=True)
+            
+            # Worthless hairRemoval= val_acc:68
+            # img = cv2.imread(path)
+            # img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # img2 = hairRemoval(img_gray, )
+            # img2 = np.repeat(img2[..., np.newaxis], 3, -1)
+            # x[j] = img2
+            
+            # img_norm = normalize_image(np.array(img) / 255.0, 
+            #                 mean=[0.485, 0.456, 0.406], 
+            #                 std=[0.229, 0.224, 0.225])
+            
             x[j] = img
             
             if path[-11:-8] == 'bcc':
@@ -128,7 +160,7 @@ valgen = SkinImageDatabase(batch_size, img_size, val_img_paths, val_label)
 
 #%% Architecture
 
-base_model = tf.keras.applications.ResNet50(
+base_model = tf.keras.applications.VGG16(
         include_top=False,
         weights="imagenet",
         input_tensor=None,
@@ -142,17 +174,29 @@ for layer in base_model.layers[:]:
 # Check the trainable status of the individual layers
 for layer in base_model.layers:
     print(layer, layer.trainable)
-    
+
 # Create the model
 model = Sequential()
-# Add the vgg convolutional base model
+# model = Sequential([
+#     layers.RandomFlip("horizontal_and_vertical", seed=5),
+#     layers.RandomRotation(0.35, seed=5),
+#     # layers.RandomZoom(height_factor=(0.2, 0.3), seed=5),
+#     # layers.Rescaling(1./255)
+#     # layers.RandomContrast(factor=0.5, seed=5)
+# ]) #normalize data to do
+# Add the convolutional base model
 model.add(base_model)
 # Add new layers
 model.add(Dropout(0.5))
 model.add(Flatten())
-model.add(Dense(10, activation='relu'))
-# model.add(Dropout(0.2))
+# model.add(Dense(256, activation='relu'))
+# model.add(Dropout(0.4))
+model.add(Dense(128, activation='relu'))
+model.add(Dropout(0.4))
+model.add(Dense(64, activation='relu'))
 model.add(Dense(classes_num, activation='softmax'))
+
+# model.build((None, 450, 600, 3))
 # Show a summary of the model. Check the number of trainable parameters
 model.summary()
 
@@ -166,8 +210,8 @@ base_model_name = model.get_layer(index=0).name
 # tf.config.run_functions_eagerly(False) # result won't be affected by eager/graph mode
 # tf.data.experimental.enable_debug_mode()
 
-model.compile(loss=tf.losses.CategoricalCrossentropy(from_logits = True),
-              optimizer='adam',
+model.compile(loss=tf.losses.CategoricalCrossentropy(),
+              optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
               metrics=['acc'])
 
 class_weight = {0: 2., 1: 1., 2: 1.}
@@ -182,14 +226,23 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 
 callback_stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
 
+# This is a sample of a scheduler I used in the past
+def lr_scheduler(epoch, lr):
+    decay_rate = 0.85
+    decay_step = 5
+    if epoch % decay_step == 0 and epoch:
+        return lr * pow(decay_rate, np.floor(epoch / decay_step))
+    return lr
+
 #%%
 # Train the model
 history = model.fit(
                     x=traingen, 
                     batch_size=batch_size, 
-                    epochs=20, 
+                    epochs=60, 
                     verbose='auto',
-                    callbacks=[model_checkpoint_callback, callback_stop_early],
+                    callbacks=[model_checkpoint_callback, callback_stop_early, 
+                               LearningRateScheduler(lr_scheduler, verbose=1)],
                     validation_data=valgen, 
                     shuffle=True,
                     class_weight=class_weight
